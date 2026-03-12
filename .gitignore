@@ -1,0 +1,33 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+
+# Corpus data — large artifacts are not tracked in git
+/data
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+dist/
+.ipynb_checkpoints/
+
+# Logs & generated reports
+*.log
+docs/reports/
+
+# Editor & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Secrets & env
+.env
+.env.*
+!.env.example
