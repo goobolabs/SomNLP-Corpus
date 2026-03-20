@@ -1,0 +1,28 @@
+[package]
+name = "corpus-tools"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Somali public dataset download and merge tools"
+
+[[bin]]
+name = "download_hplt_so"
+path = "src/bin/download_hplt_so.rs"
+
+[lib]
+name = "corpus_tools"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+arrow = { workspace = true }
+arrow-array = { workspace = true }
+arrow-schema = { workspace = true }
+clap = { workspace = true }
+flate2 = { workspace = true }
+indicatif = { workspace = true }
+parquet = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }

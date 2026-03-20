@@ -1,16 +1,26 @@
 [workspace]
-members = ["crates/common"]
+members = ["crates/common", "crates/corpus-tools"]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 authors = ["SomNLP Contributors"]
-license = "MIT"
 repository = "https://github.com/dugsiiye-labs/SomNLP-Corpus"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+indicatif = "0.17"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "gzip", "json", "rustls-tls"] }
+tempfile = "3"
+arrow = "54"
+arrow-array = "54"
+arrow-schema = "54"
+parquet = { version = "54", features = ["arrow"] }
+flate2 = "1"
 
 # Internal crates
 common = { path = "crates/common" }
