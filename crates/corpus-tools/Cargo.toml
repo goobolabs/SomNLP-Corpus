@@ -9,6 +9,14 @@ description = "Somali public dataset download and merge tools"
 name = "download_hplt_so"
 path = "src/bin/download_hplt_so.rs"
 
+[[bin]]
+name = "download_cc100_so"
+path = "src/bin/download_cc100_so.rs"
+
+[[bin]]
+name = "download_mc4_so"
+path = "src/bin/download_mc4_so.rs"
+
 [lib]
 name = "corpus_tools"
 path = "src/lib.rs"
@@ -26,3 +34,4 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
+xz2 = { workspace = true }

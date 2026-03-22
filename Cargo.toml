@@ -21,6 +21,7 @@ arrow-array = "54"
 arrow-schema = "54"
 parquet = { version = "54", features = ["arrow"] }
 flate2 = "1"
+xz2 = "0.1"
 
 # Internal crates
 common = { path = "crates/common" }
