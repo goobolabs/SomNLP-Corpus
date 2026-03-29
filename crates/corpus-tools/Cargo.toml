@@ -17,6 +17,22 @@ path = "src/bin/download_cc100_so.rs"
 name = "download_mc4_so"
 path = "src/bin/download_mc4_so.rs"
 
+[[bin]]
+name = "download_opus_so"
+path = "src/bin/download_opus_so.rs"
+
+[[bin]]
+name = "download_madlad_so"
+path = "src/bin/download_madlad_so.rs"
+
+[[bin]]
+name = "download_mt560_so"
+path = "src/bin/download_mt560_so.rs"
+
+[[bin]]
+name = "download_oscar_so"
+path = "src/bin/download_oscar_so.rs"
+
 [lib]
 name = "corpus_tools"
 path = "src/lib.rs"
