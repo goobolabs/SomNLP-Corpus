@@ -33,6 +33,10 @@ path = "src/bin/download_mt560_so.rs"
 name = "download_oscar_so"
 path = "src/bin/download_oscar_so.rs"
 
+[[bin]]
+name = "merge_corpora"
+path = "src/bin/merge_corpora.rs"
+
 [lib]
 name = "corpus_tools"
 path = "src/lib.rs"
