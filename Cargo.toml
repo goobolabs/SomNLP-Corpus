@@ -9,19 +9,25 @@ authors = ["SomNLP Contributors"]
 repository = "https://github.com/dugsiiye-labs/SomNLP-Corpus"
 
 [workspace.dependencies]
+# Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# Errors & CLI
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
-indicatif = "0.17"
+
+# HTTP & IO
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "gzip", "json", "rustls-tls"] }
 tempfile = "3"
+flate2 = "1"
+xz2 = "0.1"
+
+# Columnar / parquet (dataset shards)
 arrow = "54"
 arrow-array = "54"
 arrow-schema = "54"
 parquet = { version = "54", features = ["arrow"] }
-flate2 = "1"
-xz2 = "0.1"
 
-# Internal crates
-common = { path = "crates/common" }
+# UX
+indicatif = "0.17"

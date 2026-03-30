@@ -3,7 +3,12 @@ name = "corpus-tools"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
+repository.workspace = true
 description = "Somali public dataset download and merge tools"
+
+[lib]
+name = "corpus_tools"
+path = "src/lib.rs"
 
 [[bin]]
 name = "download_hplt_so"
@@ -30,16 +35,8 @@ name = "download_mt560_so"
 path = "src/bin/download_mt560_so.rs"
 
 [[bin]]
-name = "download_oscar_so"
-path = "src/bin/download_oscar_so.rs"
-
-[[bin]]
 name = "merge_corpora"
 path = "src/bin/merge_corpora.rs"
-
-[lib]
-name = "corpus_tools"
-path = "src/lib.rs"
 
 [dependencies]
 anyhow = { workspace = true }

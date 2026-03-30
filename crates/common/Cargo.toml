@@ -3,6 +3,8 @@ name = "common"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
+repository.workspace = true
+description = "Shared corpus record types"
 
 [dependencies]
 serde = { workspace = true }

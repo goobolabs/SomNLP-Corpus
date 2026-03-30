@@ -7,7 +7,7 @@ use corpus_tools::jsonl::{is_non_empty, read_jsonl_texts, JsonlWriter};
 
 const DEFAULT_RAW_DIR: &str = "data/raw";
 const DEFAULT_OUTPUT: &str = "data/merged/merged_so.jsonl";
-const SOURCES: &[&str] = &["cc100", "hplt", "mc4", "opus", "madlad", "mt560", "oscar"];
+const SOURCES: &[&str] = &["cc100", "hplt", "mc4", "opus", "madlad", "mt560"];
 
 #[derive(Debug, Parser)]
 #[command(about = "Merge raw Somali JSONL corpora into a single file")]
