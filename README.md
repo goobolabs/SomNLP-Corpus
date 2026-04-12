@@ -67,3 +67,5 @@ somnlp/
 | [docs/SOURCES.md](docs/SOURCES.md) | Source catalog and token estimates |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Workspace layout and crate responsibilities |
 | [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) | Pipeline stages, data flow, and usage |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
+| [CHANGELOG.md](CHANGELOG.md) | Project history |
