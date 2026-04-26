@@ -12,6 +12,7 @@ repository = "https://github.com/dugsiiye-labs/SomNLP-Corpus"
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
 
 # Errors & CLI
 anyhow = "1"

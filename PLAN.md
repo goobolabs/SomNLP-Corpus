@@ -95,7 +95,12 @@ Track B adds fresher, domain-rich text and long-term growth beyond public dumps.
 |-----|---------|
 | [PLAN.md](PLAN.md) | Vision, strategy, targets (this file) |
 | [ROADMAP.md](ROADMAP.md) | Phases, milestones, timeline |
-| [docs/SOURCES.md](docs/SOURCES.md) | Source catalog and token estimates |
+| [docs/SOURCES.md](docs/SOURCES.md) | Source registry |
+| [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md) | Record metadata and licensing |
+| [docs/MERGE_SEMANTICS.md](docs/MERGE_SEMANTICS.md) | Merge behavior |
+| [docs/QUALITY_METADATA.md](docs/QUALITY_METADATA.md) | Quality and dedup metadata |
+| [docs/ID_STRATEGY.md](docs/ID_STRATEGY.md) | IDs and hashes |
+| [docs/SCHEMA_REVIEW.md](docs/SCHEMA_REVIEW.md) | Schema design review |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Workspace and crate layout |
 | [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) | Pipeline stages and usage |
 | [README.md](README.md) | Quick start |

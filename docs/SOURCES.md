@@ -1,151 +1,122 @@
-# Source Catalog
+# Source Registry
 
-Every data source for SomNLP-Corpus: what it contributes, how we access it, and
-estimated scale. See [PLAN.md](../PLAN.md) for the two-track strategy.
+Formal catalog of all data sources for SomNLP-Corpus. Each source has a stable
+registry key used in metadata, IDs, and file paths.
 
-**Status legend:** done · in progress · planned · skipped
+See also: [METADATA_SCHEMA.md](METADATA_SCHEMA.md), [PLAN.md](../PLAN.md).
 
----
-
-## Track A — Public datasets
-
-Pre-built Somali web corpora. Downloaded via `corpus-tools` binaries.
-
-| Key | Source | Access | Est. raw scale | Tool | Status |
-|-----|--------|--------|----------------|------|--------|
-| `hplt` | [HPLT2.0 cleaned](https://huggingface.co/datasets/HPLT/HPLT2.0_cleaned) `som_Latn` | Hugging Face | ~505M tokens, ~966K docs | `download_hplt_so` | done |
-| `cc100` | [CC-100 Somali](https://data.statmt.org/cc-100/so.txt.xz) | Direct HTTP | ~81M tokens, ~396K docs | `download_cc100_so` | done |
-| `mc4` | [allenai/c4](https://huggingface.co/datasets/allenai/c4) `so` | Hugging Face | tens of millions | `download_mc4_so` | done |
-| `madlad` | [MADLAD-400](https://huggingface.co/datasets/allenai/MADLAD-400) `so` | Hugging Face | tens of millions | `download_madlad_so` | done |
-| `opus` | [opus_paracrawl](https://huggingface.co/datasets/Helsinki-NLP/opus_paracrawl) `en-so` | Hugging Face | parallel sentences | `download_opus_so` | done |
-| `mt560` | [MT560 en–so pairs](https://huggingface.co/datasets/michsethowusu/english-somali_sentence-pairs_mt560) | Hugging Face | ~161K pairs | `download_mt560_so` | done |
-
-### Cross-source overlap (approximate)
-
-From baseline measurements on similar corpora:
-
-- HPLT ∩ CC100: ~0.12% of documents overlap
-- HPLT is the dominant source (~86% of raw tokens)
-- mC4 and MADLAD share Common Crawl ancestry with HPLT — net new tokens after dedup will be lower than raw counts
-
-### Skipped sources
-
-| Source | Reason |
-|--------|--------|
-| OSCAR-2301 `so` | Only 6 documents / 51 words in the official split; language ID failed on Somali |
-
-### Track A total (after dedup + quality filter)
-
-Estimated **~250–350M final tokens** from public datasets alone.
+**Status:** `done` · `planned` · `skipped`
 
 ---
 
-## Track B — Collected sources
+## Registry — Track A (public datasets)
 
-Targeted collection of Somali text not fully covered by public dumps.
+| Key | Name | Category | Track | Est. scale | License | Tool | Status | Notes |
+|-----|------|----------|:-----:|------------|---------|------|--------|-------|
+| `hplt` | HPLT2.0 cleaned `som_Latn` | web crawl | A | ~505M tokens, ~966K docs | CC0-1.0 | `download_hplt_so` | done | Primary backbone; dominates raw token count |
+| `cc100` | CC-100 Somali | web crawl | A | ~81M tokens, ~396K docs | CC-BY-SA-4.0 | `download_cc100_so` | done | ~0.12% overlap with HPLT; net-additive |
+| `mc4` | mC4 `so` | web crawl | A | tens of millions | ODC-BY | `download_mc4_so` | done | Overlaps CC ancestry with HPLT; dedup required |
+| `madlad` | MADLAD-400 `so` | web crawl | A | tens of millions | ODC-BY | `download_madlad_so` | done | Clean split default; `--include-noisy` optional |
+| `opus` | OPUS ParaCrawl `en-so` | parallel text | A | parallel sentences | CC0-1.0 | `download_opus_so` | done | Somali column from `translation.so` |
+| `mt560` | MT560 en–so pairs | parallel / religious | A | ~161K pairs | CC-BY-4.0 | `download_mt560_so` | done | Writes `source: mt560` tag in raw JSONL |
 
-### B1 — Web scraping (planned)
+### Track A licensing note
 
-Somali text from news sites, blogs, government pages, universities, religious
-articles, and online magazines.
+There is **no single corpus license**. Redistribution of the combined corpus requires
+honoring each upstream license. The `license` field on processed records is copied
+from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 
-| Parameter | Estimate |
-|-----------|----------|
-| Target sites | ~100 websites |
-| Articles per site | ~500 |
-| Words per article | ~800 |
-| **Total** | **~40M words (~50M+ tokens)** |
+### Skipped — Track A
 
-Likely the largest Track B contributor. Requires per-site extraction rules,
-robots.txt compliance, and rate limiting.
+| Key | Name | Reason | Status |
+|-----|------|--------|--------|
+| `oscar` | OSCAR-2301 `so` | Official split: 6 docs / 51 words; LID failed on Somali | skipped |
 
-**Status:** planned
+### Track A outlook
 
-### B2 — Wikipedia & Wikimedia (planned)
-
-| Source | Est. contribution |
-|--------|-------------------|
-| Somali Wikipedia | bulk of estimate |
-| Wiktionary, Wikiquote, Wikinews | smaller additions |
-| **Total** | **1–3M tokens** |
-
-Well-structured, educational content. Relatively small but high quality.
-
-**Status:** planned
-
-### B3 — Books & educational materials (planned)
-
-Public-domain books, author-approved texts, school materials, research publications.
-
-| **Total** | **10–20M tokens** |
-
-High grammatical quality. Per-source access review required.
-
-**Status:** planned
-
-### B4 — Social media (planned)
-
-Public posts, comments, forums, community discussions.
-
-| **Total** | **5–15M tokens** |
-
-Reflects real-world language but needs heavy cleaning (spelling errors, emojis,
-duplicates, informal writing).
-
-**Status:** planned
-
-### B5 — Subtitles (planned)
-
-Movies, educational videos, public subtitle collections.
-
-| **Total** | **5–10M tokens** |
-
-Conversational Somali; everyday vocabulary and dialogue patterns.
-
-**Status:** planned
-
-### B6 — OCR digitization (planned)
-
-Scanned old books, newspapers, dictionaries, printed archives.
-
-| **Total** | **5–15M tokens** |
-
-Requires OCR extraction plus manual or automated quality verification.
-
-**Status:** planned
-
-### B7 — Community contributions (planned)
-
-Stories, poems, essays, articles, documentation submitted by the Somali community.
-
-| **Total** | **several million tokens** (ongoing) |
-
-Preserves cultural and dialect diversity. Grows over time.
-
-**Status:** planned
+~250–350M final tokens after cross-source dedup and quality filtering.
 
 ---
 
-## Combined corpus outlook
+## Registry — Track B (collected sources)
 
-| Track | Est. final tokens |
-|-------|-------------------|
-| A — public datasets (after dedup/filter) | ~250–350M |
-| B — collected sources | ~80–120M+ |
-| **Combined potential** | **~330–470M+ tokens** |
+| Key | Name | Category | Track | Est. scale | License | Tool | Status | Notes |
+|-----|------|----------|:-----:|------------|---------|------|--------|-------|
+| `web` | Somali web scraping | news / blogs / gov | B | ~40M words | per-site | collector (planned) | planned | ~100 sites; robots.txt required |
+| `wikipedia` | Somali Wikipedia | encyclopedia | B | ~1–3M tokens | CC-BY-SA-4.0 | collector (planned) | planned | Pilot quality anchor |
+| `wikimedia` | Wiktionary / Wikiquote / Wikinews | reference | B | small | CC-BY-SA-4.0 | collector (planned) | planned | Supplement to Wikipedia |
+| `books` | Books & educational materials | literature / education | B | 10–20M tokens | per-work | collector (planned) | planned | Public domain or author-approved |
+| `social` | Social media & forums | informal | B | 5–15M tokens | per-platform | collector (planned) | planned | Heavy cleaning required |
+| `subtitles` | Video subtitles | conversational | B | 5–10M tokens | per-collection | collector (planned) | planned | Movies, educational video |
+| `ocr` | OCR digitization | historical | B | 5–15M tokens | per-work | collector (planned) | planned | Scanned books, newspapers |
+| `community` | Community contributions | mixed | B | ongoing | per-submission | intake (planned) | planned | Stories, poems, essays |
 
-Exact numbers depend on deduplication, quality filtering, and how much of Track B
-is successfully collected.
+---
+
+## Per-source detail
+
+### `hplt`
+
+- **Upstream:** [HPLT/HPLT2.0_cleaned](https://huggingface.co/datasets/HPLT/HPLT2.0_cleaned) config `som_Latn`
+- **Access:** Hugging Face parquet shards
+- **Output:** `data/raw/hplt/hplt_so.jsonl`
+- **License:** CC0-1.0 (verify on upstream dataset card before release)
+
+### `cc100`
+
+- **Upstream:** [CC-100 Somali](https://data.statmt.org/cc-100/so.txt.xz)
+- **Access:** Direct HTTP (xz compressed)
+- **Output:** `data/raw/cc100/cc100_so.jsonl`
+- **License:** CC-BY-SA-4.0
+
+### `mc4`
+
+- **Upstream:** [allenai/c4](https://huggingface.co/datasets/allenai/c4) config `so`
+- **Access:** Hugging Face gzip-json shards (enumerated)
+- **Output:** `data/raw/mc4/mc4_so.jsonl`
+- **License:** ODC-BY (verify on upstream)
+
+### `madlad`
+
+- **Upstream:** [allenai/MADLAD-400](https://huggingface.co/datasets/allenai/MADLAD-400) language `so`
+- **Access:** Hugging Face jsonl.gz shards
+- **Output:** `data/raw/madlad/madlad_so.jsonl`
+- **License:** ODC-BY (verify on upstream)
+
+### `opus`
+
+- **Upstream:** [Helsinki-NLP/opus_paracrawl](https://huggingface.co/datasets/Helsinki-NLP/opus_paracrawl) config `en-so`
+- **Access:** Hugging Face parquet; field `translation.so`
+- **Output:** `data/raw/opus/opus_so.jsonl`
+- **License:** CC0-1.0 (verify on upstream)
+
+### `mt560`
+
+- **Upstream:** [english-somali_sentence-pairs_mt560](https://huggingface.co/datasets/michsethowusu/english-somali_sentence-pairs_mt560)
+- **Access:** Hugging Face parquet; column `som`
+- **Output:** `data/raw/mt560/mt560_so.jsonl`
+- **License:** CC-BY-4.0 (verify on upstream)
 
 ---
 
 ## Output paths
 
-| Stage | Path |
-|-------|------|
+| Stage | Path pattern |
+|-------|--------------|
 | Per-source raw | `data/raw/<key>/<key>_so.jsonl` |
 | Merged raw | `data/merged/merged_so.jsonl` |
 | Cleaned | `data/cleaned/` (planned) |
 | Deduplicated | `data/deduplicated/` (planned) |
 | Filtered | `data/filtered/` (planned) |
 | Final | `data/final/` (planned) |
+| Rejected (sidecar) | `data/<stage>/<stage>.rejected.jsonl` (planned) |
+
+---
+
+## Adding a new source
+
+1. Choose a stable registry key (lowercase, no spaces).
+2. Add a row to this table with license, scale estimate, and tool.
+3. Implement downloader or collector.
+4. Update [METADATA_SCHEMA.md](METADATA_SCHEMA.md) if new `meta` fields are needed.
+5. Document overlap expectations with existing sources.

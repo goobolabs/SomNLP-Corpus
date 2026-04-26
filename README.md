@@ -64,7 +64,12 @@ somnlp/
 |-----|-------------|
 | [PLAN.md](PLAN.md) | Vision, two-track strategy, corpus targets |
 | [ROADMAP.md](ROADMAP.md) | Phases and milestones |
-| [docs/SOURCES.md](docs/SOURCES.md) | Source catalog and token estimates |
+| [docs/SOURCES.md](docs/SOURCES.md) | Source registry and token estimates |
+| [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md) | Record metadata and licensing model |
+| [docs/MERGE_SEMANTICS.md](docs/MERGE_SEMANTICS.md) | Merge behavior and provenance |
+| [docs/QUALITY_METADATA.md](docs/QUALITY_METADATA.md) | Dedup and quality metadata |
+| [docs/ID_STRATEGY.md](docs/ID_STRATEGY.md) | Document IDs and content hashes |
+| [docs/SCHEMA_REVIEW.md](docs/SCHEMA_REVIEW.md) | Schema design review |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Workspace layout and crate responsibilities |
 | [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) | Pipeline stages, data flow, and usage |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
