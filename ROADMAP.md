@@ -29,14 +29,27 @@ M1 Foundation ─▶ M2 Public datasets ─▶ M3 Pipeline ─▶ M4 Collection 
 
 ## Phase 3 — Processing pipeline (next)
 
-Build the stages between merged raw text and a training-ready corpus.
+Build the stages between merged raw text and a training-ready corpus. Full
+specification: [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md).
 
-- [ ] Cleaning crate — encoding fix, HTML strip, whitespace, Somali-aware rules
-- [ ] Deduplication — exact hash + near-duplicate (MinHash/LSH)
-- [ ] Language identification — filter non-Somali text
-- [ ] Quality gates — length, symbol ratio, repeated n-grams
-- [ ] Expand `Document` schema with lang scores, dedup info, quality flags
-- [ ] Unified CLI or stage runner to chain: merge → clean → dedup → filter
+```text
+merge + exact dedup → clean → language identification → near dedup → final
+```
+
+- [ ] Merge: write `source` per record, streaming exact dedup (first-seen wins)
+- [ ] Clean crate — HTML entities, mojibake repair (CP1252), NFC, control/invisible
+      stripping, repeated-char collapse, whitespace, per-class length floors
+- [ ] Canonical `content_hash` + `DocId` on cleaned text; post-clean exact recheck
+- [ ] Language identification — benchmark `lingua-rs` / `whatlang` / GlotLID on a
+      FLORES-200 eval set, then gate by source class
+- [ ] Near-dedup — MinHash word-3-gram, k=64, LSH 16×4, τ=0.80, keep-longest,
+      document class only, with exact-Jaccard verification
+- [ ] Wire `CorpusRecord` metadata: provenance, lang scores, dedup info, quality flags
+- [ ] Stage runner chaining merge → clean → LID → near-dedup, config-driven
+- [ ] Per-stage stats reports + reject sidecars
+
+Quality filtering (char-n-gram coverage) is deferred until Wikipedia-so lands in
+Phase 4 to serve as the clean seed.
 
 **Exit:** reproducible pipeline from `data/merged/` to `data/final/` with a stats report.
 
