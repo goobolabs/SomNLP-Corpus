@@ -1,0 +1,37 @@
+{"corrupted": "cafÃ©", "expected": "café"}
+{"corrupted": "naÃ¯ve", "expected": "naïve"}
+{"corrupted": "Ã¼ber", "expected": "über"}
+{"corrupted": "JosÃ©", "expected": "José"}
+{"corrupted": "ZÃ¼rich", "expected": "Zürich"}
+{"corrupted": "FranÃ§ois", "expected": "François"}
+{"corrupted": "BjÃ¶rk", "expected": "Björk"}
+{"corrupted": "maÃ±ana", "expected": "mañana"}
+{"corrupted": "rÃ©sumÃ©", "expected": "résumé"}
+{"corrupted": "dÃ©jÃ ", "expected": "déjà"}
+{"corrupted": "crÃ¨me brÃ»lÃ©e", "expected": "crème brûlée"}
+{"corrupted": "piÃ±ata", "expected": "piñata"}
+{"corrupted": "KÃ¶ln", "expected": "Köln"}
+{"corrupted": "MÃ¼nchen", "expected": "München"}
+{"corrupted": "SÃ£o Paulo", "expected": "São Paulo"}
+{"corrupted": "RenÃ©e", "expected": "Renée"}
+{"corrupted": "fiancÃ©e", "expected": "fiancée"}
+{"corrupted": "jalapeÃ±o", "expected": "jalapeño"}
+{"corrupted": "BeyoncÃ©", "expected": "Beyoncé"}
+{"corrupted": "DvoÅ™Ã¡k", "expected": "Dvořák"}
+{"corrupted": "smÃ¶rgÃ¥sbord", "expected": "smörgåsbord"}
+{"corrupted": "Ã…ngstrÃ¶m", "expected": "Ångström"}
+{"corrupted": "CuraÃ§ao", "expected": "Curaçao"}
+{"corrupted": "itâ€™s", "expected": "it’s"}
+{"corrupted": "donâ€™t", "expected": "don’t"}
+{"corrupted": "canâ€™t", "expected": "can’t"}
+{"corrupted": "â€˜singleâ€™", "expected": "‘single’"}
+{"corrupted": "5â€“10", "expected": "5–10"}
+{"corrupted": "2024â€¦", "expected": "2024…"}
+{"corrupted": "eâ€”m dash", "expected": "e—m dash"}
+{"corrupted": "Saintâ€‘Tropez", "expected": "Saint‑Tropez"}
+{"corrupted": "VoilÃ !", "expected": "Voilà!"}
+{"corrupted": "DÃ¼sseldorf", "expected": "Düsseldorf"}
+{"corrupted": "MÃ¡laga", "expected": "Málaga"}
+{"corrupted": "BogotÃ¡", "expected": "Bogotá"}
+{"corrupted": "ReykjavÃ­k", "expected": "Reykjavík"}
+{"corrupted": "TromsÃ¸", "expected": "Tromsø"}

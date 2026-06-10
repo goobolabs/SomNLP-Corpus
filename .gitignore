@@ -15,9 +15,11 @@ __pycache__/
 dist/
 .ipynb_checkpoints/
 
-# Logs & generated reports
+# Logs
 *.log
-docs/reports/
+
+# Pipeline reports (per-run stats and benchmarks — regenerated locally)
+/reports/
 
 # Editor & OS
 .vscode/

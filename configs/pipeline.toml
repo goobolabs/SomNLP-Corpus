@@ -1,0 +1,37 @@
+# SomNLP-Corpus Phase 3 pipeline config — single source of truth for all knobs.
+# See docs/CLEANING_PLAN.md. Changed knobs should be recorded in the changelog.
+
+version = "1"
+
+# Merge: first-seen-wins order for exact dedup (curated/parallel first, largest
+# web crawl last). See CLEANING_PLAN.md §1.
+merge_source_order = ["mt560", "opus", "cc100", "mc4", "madlad", "hplt"]
+
+[clean]
+# Per-class length floors (words). Document floor from empirical benchmark:
+# reports/min_word_threshold_benchmark.md (full corpus, 2026-06-10).
+document_min_words = 25
+sentence_min_words = 5
+# Reject documents whose U+FFFD ratio exceeds this fraction.
+ufffd_reject_ratio = 0.005
+# Collapse runs of 4+ identical letters/punctuation down to this many.
+max_repeated_run = 3
+# Flag (review, not reject) documents above this symbol-to-text ratio.
+symbol_ratio_review = 0.5
+
+[lid]
+# Backend chosen by the M3a benchmark: "whatlang" | "lingua".
+backend = "lingua"
+# Minimum top-1 confidence for the document-class gate. Placeholder until the
+# benchmark finalizes it.
+min_confidence = 0.50
+# Clip text to this many bytes before detection (speed on long docs).
+detect_clip_bytes = 2000
+
+[near_dedup]
+shingle_k = 3
+k_hashes = 64
+bands = 16
+rows = 4
+tau = 0.80
+seed = 0

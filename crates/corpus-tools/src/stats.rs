@@ -7,6 +7,41 @@ pub struct Stats {
     pub per_source: BTreeMap<String, u64>,
 }
 
+/// Exact-dedup counters recorded during the merge stage.
+#[derive(Debug, Default, Clone)]
+pub struct DedupCounters {
+    pub total_input: u64,
+    pub total_kept: u64,
+    pub within_source_dups: BTreeMap<String, u64>,
+    pub cross_source_dups: BTreeMap<String, u64>,
+    pub per_source_input: BTreeMap<String, u64>,
+    pub per_source_kept: BTreeMap<String, u64>,
+}
+
+impl DedupCounters {
+    pub fn record_input(&mut self, source: &str) {
+        self.total_input += 1;
+        *self.per_source_input.entry(source.to_string()).or_insert(0) += 1;
+    }
+
+    pub fn record_kept(&mut self, source: &str) {
+        self.total_kept += 1;
+        *self.per_source_kept.entry(source.to_string()).or_insert(0) += 1;
+    }
+
+    pub fn record_within_dup(&mut self, source: &str) {
+        *self.within_source_dups.entry(source.to_string()).or_insert(0) += 1;
+    }
+
+    pub fn record_cross_dup(&mut self, source: &str) {
+        *self.cross_source_dups.entry(source.to_string()).or_insert(0) += 1;
+    }
+
+    pub fn total_dropped(&self) -> u64 {
+        self.total_input - self.total_kept
+    }
+}
+
 impl Stats {
     pub fn avg_len(&self) -> f64 {
         if self.total_docs == 0 {

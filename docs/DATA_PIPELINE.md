@@ -2,21 +2,28 @@
 
 How raw Somali text moves from public datasets toward a training-ready corpus.
 
+Full specification: [CLEANING_PLAN.md](CLEANING_PLAN.md). Configuration:
+`configs/pipeline.toml`.
+
 ## Overview
 
 ```text
-public datasets ──▶ download ──▶ merge ──▶ [clean] ──▶ [dedup] ──▶ [filter] ──▶ [final]
-                    raw/        merged/     cleaned/    dedup/      filtered/    final/
+download → merge + exact dedup → clean → LID → near dedup → final
+raw/       merged/              cleaned/  lid/   final/
 ```
 
-Stages in **bold** are implemented today. Bracketed stages are planned.
+All stages through near-dedup are **implemented**. Quality filtering (char-n-gram
+coverage) is deferred until Wikipedia-so is available as a clean seed (Phase 4).
 
-## Stage 1 — Download (implemented)
+```bash
+cargo build --release
+```
+
+## Stage 1 — Download
 
 **Goal:** fetch public Somali datasets and write per-source JSONL under `data/raw/`.
 
-Each downloader streams or downloads source shards, extracts Somali text, and
-writes one JSON object per line:
+Each downloader writes one JSON object per line:
 
 ```json
 {"text": "Soomaaliya waa dal ku yaal Geeska Afrika."}
@@ -28,11 +35,9 @@ MT560 records include a source tag:
 {"text": "...", "source": "mt560"}
 ```
 
-### Available downloaders
+### Downloaders
 
 ```bash
-cargo build --release
-
 ./target/release/download_hplt_so   [--limit N] [--no-stream]
 ./target/release/download_cc100_so  [--limit N] [--no-stream]
 ./target/release/download_mc4_so    [--limit N] [--no-stream]
@@ -40,8 +45,6 @@ cargo build --release
 ./target/release/download_madlad_so [--limit N] [--include-noisy]
 ./target/release/download_mt560_so  [--limit N]
 ```
-
-Common flags:
 
 | Flag | Description |
 |------|-------------|
@@ -62,48 +65,217 @@ Default outputs:
 
 Recommended download order: HPLT → CC100 → mC4 → OPUS → MADLAD → MT560.
 
-## Stage 2 — Merge (implemented)
+## Stage 2 — Merge + exact dedup
 
-**Goal:** combine per-source JSONL files into one merged corpus.
+**Goal:** combine per-source JSONL into one file with `source` on every line and
+streaming exact dedup (first-seen wins).
 
 ```bash
 ./target/release/merge_corpora
-./target/release/merge_corpora --sources hplt cc100 mc4
-./target/release/merge_corpora --raw-dir data/raw --output data/merged/merged_so.jsonl
+./target/release/merge_corpora --config configs/pipeline.toml
+./target/release/merge_corpora --raw-dir data/raw --output data/merged/merged_so.jsonl --limit 1000
 ```
 
-- Default sources: `cc100`, `hplt`, `mc4`, `opus`, `madlad`, `mt560`
+- Source order from `merge_source_order` in `configs/pipeline.toml` (default:
+  `mt560 → opus → cc100 → mc4 → madlad → hplt`)
 - Missing source files are skipped with a warning
-- Output: `data/merged/merged_so.jsonl`
-- Prints per-source document counts and totals
+- Output: `data/merged/merged_so.jsonl` (`RawRecord`: `text` + `source`)
+- Stats: `reports/01_merge_stats.json`
 
-## Stage 3 — Clean (planned)
+## Stage 3 — Clean
 
-Normalize text: fix encoding, strip HTML remnants, collapse whitespace, apply
-Somali-aware rules. Output to `data/cleaned/`.
+**Goal:** normalize text, apply per-class length floors, build full `CorpusRecord`
+metadata with canonical `content_hash` and `DocId`, post-clean exact recheck.
 
-## Stage 4 — Deduplicate (planned)
+```bash
+./target/release/clean_corpus
+./target/release/clean_corpus --input data/merged/merged_so.jsonl --output data/cleaned/cleaned_so.jsonl
+./target/release/clean_corpus --config configs/pipeline.toml --limit 1000
+```
 
-Remove exact and near-duplicate documents within and across sources. Output to
-`data/deduplicated/`.
+Cleaning chain (in order): HTML entity decode → mojibake repair (CP1252) → NFC →
+control/invisible strip → repeated-char collapse → whitespace normalize → length /
+corruption gates.
 
-## Stage 5 — Language filter (planned)
+Length floors (from `configs/pipeline.toml`, benchmarked in
+`reports/min_word_threshold_benchmark.md`): **25 words** for document sources
+(HPLT, CC100, mC4, MADLAD), **5 words** for sentence sources (OPUS, MT560).
 
-Identify and drop non-Somali text. Output to `data/filtered/`.
+- Output: `data/cleaned/cleaned_so.jsonl`
+- Rejects: `data/cleaned/cleaned_so.rejected.jsonl`
+- Stats: `reports/02_clean_stats.json`
 
-## Stage 6 — Final export (planned)
+## Stage 4 — Language identification
 
-Apply quality gates, produce release-ready JSONL/Parquet, and generate corpus
-statistics. Output to `data/final/`.
+**Goal:** verify Somali on document-class sources; tag-only on sentence-class
+(OPUS, MT560). Backend chosen by benchmark: **lingua** (see `reports/lid_benchmark.md`).
 
-## Record format
+```bash
+./target/release/benchmark_lid   # run before changing LID backend/threshold
+./target/release/lid_verify
+./target/release/lid_verify --input data/cleaned/cleaned_so.jsonl --output data/lid/lid_so.jsonl
+```
 
-The current `Document` type in `crates/common` matches downloader output:
+- Output: `data/lid/lid_so.jsonl`
+- Rejects: `data/lid/lid_so.rejected.jsonl`
+- Stats: `reports/03_lid_stats.json`
+
+## Stage 5 — Near dedup
+
+**Goal:** MinHash + LSH near-duplicate removal on **document-class** records only;
+sentence-class passes through unchanged. Exact Jaccard verification at τ=0.80;
+keep-longest per cluster.
+
+```bash
+./target/release/near_dedup
+./target/release/near_dedup --input data/lid/lid_so.jsonl --output data/final/final_so.jsonl
+```
+
+- Output: `data/final/final_so.jsonl`
+- Rejects: `data/final/final_so.rejected.jsonl`
+- Stats: `reports/04_near_dedup_stats.json`
+
+## Stage runner
+
+Run the full post-download pipeline in one command:
+
+```bash
+./target/release/run_pipeline --config configs/pipeline.toml
+./target/release/run_pipeline --stages clean,lid,near_dedup
+./target/release/run_pipeline --limit 1000
+```
+
+Stages: `merge` → `clean` → `lid` → `near_dedup` (invokes sibling binaries).
+
+## Reports and reject sidecars
+
+Every stage writes **JSON stats** under `reports/` and a companion **Markdown summary**
+(`.md` next to each `.json`). Terminal output mirrors the same breakdown: input/kept/
+rejected counts, drops by reason, and a per-source table.
+
+### Viewing dropped text
+
+Each stage writes dropped records to a **sidecar JSONL** (full text + reason). When
+`run_pipeline` finishes, it prints copy-paste commands and writes `reports/inspect_drops.sh`:
+
+```bash
+# All stages
+bash reports/inspect_drops.sh
+
+# One stage
+bash reports/inspect_drops.sh merge
+bash reports/inspect_drops.sh clean
+bash reports/inspect_drops.sh lid
+bash reports/inspect_drops.sh near_dedup
+```
+
+| Stage | Dropped text file |
+|-------|-------------------|
+| merge | `data/merged/merged_so.dropped.jsonl` |
+| clean | `data/cleaned/cleaned_so.rejected.jsonl` |
+| LID | `data/lid/lid_so.rejected.jsonl` |
+| near dedup | `data/final/final_so.rejected.jsonl` |
+
+Quick preview (clean example):
+
+```bash
+jq -r '[.quality.flags[0], .provenance.source, .text] | @tsv' \
+  data/cleaned/cleaned_so.rejected.jsonl | head -30
+```
+
+Merge drops (exact dedup, before `CorpusRecord`):
+
+```bash
+jq -r '[.reason, .source, .text] | @tsv' \
+  data/merged/merged_so.dropped.jsonl | head -30
+```
+
+| Stage | JSON report | Markdown | Drop sidecar |
+|-------|-------------|----------|----------------|
+| merge | `reports/01_merge_stats.json` | `reports/01_merge_stats.md` | `data/merged/merged_so.dropped.jsonl` |
+| clean | `reports/02_clean_stats.json` | `reports/02_clean_stats.md` | `data/cleaned/cleaned_so.rejected.jsonl` |
+| LID | `reports/03_lid_stats.json` | `reports/03_lid_stats.md` | `data/lid/lid_so.rejected.jsonl` |
+| near dedup | `reports/04_near_dedup_stats.json` | `reports/04_near_dedup_stats.md` | `data/final/final_so.rejected.jsonl` |
+
+### Reading drops by reason
+
+**Clean** — `drops_by_reason` in `02_clean_stats.json` (and terminal):
+
+| Flag | Meaning |
+|------|---------|
+| `too_short` | Below `document_min_words` or `sentence_min_words` for that source class |
+| `corrupted` | Replacement-char ratio above `ufffd_reject_ratio` |
+| `exact_duplicate_after_clean` | Same normalized text hash as an earlier kept record |
+
+**LID** — document-class sources only (HPLT, CC100, mC4, MADLAD):
+
+| Reason | Meaning |
+|--------|---------|
+| `not_somali` | Detector returned a non-Somali language |
+| `low_lang_score` | Detected Somali but below `min_confidence` |
+
+Sentence-class sources (OPUS, MT560) are tagged only — never rejected at LID.
+
+**Near dedup** — document-class only:
+
+| Reason | Meaning |
+|--------|---------|
+| `near_duplicate` | Jaccard similarity ≥ τ against a longer kept document in the same cluster |
+
+### Inspecting rejected records
+
+Reject sidecars are full `CorpusRecord` JSONL — same schema as the kept output, with
+`quality.disposition = "rejected"` and `quality.flags` explaining why.
+
+```bash
+# Clean rejects: flag, source, first 80 chars of text
+jq -r '[.quality.flags[0], .provenance.source, .text[0:80]] | @tsv' \
+  data/cleaned/cleaned_so.rejected.jsonl | head -20
+
+# LID rejects: flag, detected lang, snippet
+jq -r '[.quality.flags[0], .provenance.lang, .quality.lang_score, .text[0:80]] | @tsv' \
+  data/lid/lid_so.rejected.jsonl | head -20
+
+# Near-dedup rejects: canonical id kept instead
+jq -r '[.quality.flags[0], .dedup.canonical_id, .text[0:80]] | @tsv' \
+  data/final/final_so.rejected.jsonl | head -20
+
+# Count rejects by reason
+jq -r '.quality.flags[0]' data/cleaned/cleaned_so.rejected.jsonl | sort | uniq -c
+```
+
+Quick report peek without `jq`:
+
+```bash
+cat reports/02_clean_stats.md
+cat reports/03_lid_stats.md
+```
+
+## Record formats
+
+### Raw (merge output) — `RawRecord`
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `text` | string | Document text (required) |
-| `source` | string, optional | Dataset identifier when present |
+| `source` | string | Registry key (`hplt`, `cc100`, …) |
 
-The schema will gain provenance, language scores, dedup metadata, and quality
-flags as later stages are implemented.
+### Processed (clean onward) — `CorpusRecord`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | `{source}:{hash_prefix}` |
+| `text` | string | Cleaned UTF-8 text |
+| `provenance` | object | Source, `collected_at`, `lang`, optional URL/title/… |
+| `license` | string | Per-source SPDX-style identifier |
+| `content_hash` | string | SHA-256 hex of normalized cleaned text |
+| `dedup` | object | Duplicate metadata |
+| `quality` | object | Disposition, flags, lang score |
+| `schema_version` | u16 | Currently `1` |
+
+See [METADATA_SCHEMA.md](METADATA_SCHEMA.md) for full field semantics.
+
+## Deferred
+
+- **Quality filter** — char-n-gram coverage against Wikipedia-so seed (Phase 4)
+- **Final release packaging** — dataset card, checksums, Hugging Face upload (Phase 6)

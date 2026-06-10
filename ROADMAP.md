@@ -5,7 +5,7 @@ Phases and milestones for SomNLP-Corpus. See [PLAN.md](PLAN.md) for strategy and
 
 ```text
 M1 Foundation ─▶ M2 Public datasets ─▶ M3 Pipeline ─▶ M4 Collection ─▶ M5 Release
-   (done)            (done)              (next)          (planned)       (planned)
+   (done)            (done)              (done)          (next)          (planned)
 ```
 
 ---
@@ -27,7 +27,7 @@ M1 Foundation ─▶ M2 Public datasets ─▶ M3 Pipeline ─▶ M4 Collection 
 
 ---
 
-## Phase 3 — Processing pipeline (next)
+## Phase 3 — Processing pipeline (done)
 
 Build the stages between merged raw text and a training-ready corpus. Full
 specification: [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md).
@@ -36,22 +36,24 @@ specification: [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md).
 merge + exact dedup → clean → language identification → near dedup → final
 ```
 
-- [ ] Merge: write `source` per record, streaming exact dedup (first-seen wins)
-- [ ] Clean crate — HTML entities, mojibake repair (CP1252), NFC, control/invisible
-      stripping, repeated-char collapse, whitespace, per-class length floors
-- [ ] Canonical `content_hash` + `DocId` on cleaned text; post-clean exact recheck
-- [ ] Language identification — benchmark `lingua-rs` / `whatlang` / GlotLID on a
-      FLORES-200 eval set, then gate by source class
-- [ ] Near-dedup — MinHash word-3-gram, k=64, LSH 16×4, τ=0.80, keep-longest,
+- [x] Merge: write `source` per record, streaming exact dedup (first-seen wins)
+- [x] `corpus-pipeline` crate — HTML entities, mojibake repair (CP1252), NFC,
+      control/invisible stripping, repeated-char collapse, whitespace, per-class
+      length floors
+- [x] Canonical `content_hash` + `DocId` on cleaned text; post-clean exact recheck
+- [x] Language identification — benchmark `lingua` / `whatlang` on labeled eval
+      set; gate document-class, tag-only sentence-class
+- [x] Near-dedup — MinHash word-3-gram, k=64, LSH 16×4, τ=0.80, keep-longest,
       document class only, with exact-Jaccard verification
-- [ ] Wire `CorpusRecord` metadata: provenance, lang scores, dedup info, quality flags
-- [ ] Stage runner chaining merge → clean → LID → near-dedup, config-driven
-- [ ] Per-stage stats reports + reject sidecars
+- [x] `CorpusRecord` metadata: provenance, lang scores, dedup info, quality flags
+- [x] Stage runner (`run_pipeline`) chaining merge → clean → LID → near-dedup
+- [x] Per-stage stats reports + reject sidecars
 
 Quality filtering (char-n-gram coverage) is deferred until Wikipedia-so lands in
 Phase 4 to serve as the clean seed.
 
-**Exit:** reproducible pipeline from `data/merged/` to `data/final/` with a stats report.
+**Exit:** reproducible pipeline from `data/merged/` to `data/final/` with stats
+reports. See [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) for commands.
 
 ---
 
@@ -97,7 +99,7 @@ Add targeted Somali text beyond public dumps.
 |-----------|-------|--------|
 | M1 | Foundation | done |
 | M2 | Public dataset download + merge | done |
-| M3 | Cleaning, dedup, langid pipeline | planned |
+| M3 | Cleaning, dedup, langid pipeline | done |
 | M4 | Web & Wikipedia collection | planned |
 | M5 | Extended sources | planned |
 | M6 | Release v0.1.0 | planned |

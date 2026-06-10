@@ -39,10 +39,12 @@ name = "merge_corpora"
 path = "src/bin/merge_corpora.rs"
 
 [dependencies]
+common = { path = "../common" }
 anyhow = { workspace = true }
 arrow = { workspace = true }
 arrow-array = { workspace = true }
 arrow-schema = { workspace = true }
+chrono = { workspace = true }
 clap = { workspace = true }
 flate2 = { workspace = true }
 indicatif = { workspace = true }
@@ -51,4 +53,5 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
+toml = { workspace = true }
 xz2 = { workspace = true }

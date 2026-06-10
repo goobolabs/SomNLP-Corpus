@@ -99,6 +99,8 @@ pub enum QualityFlag {
     MostlyNumbers,
     RepeatedNgrams,
     NotSomali,
+    /// Excessive U+FFFD replacement characters (heavily corrupted encoding).
+    Corrupted,
 }
 
 /// Whether a record is kept, rejected, or held for review.

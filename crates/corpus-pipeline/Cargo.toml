@@ -1,0 +1,59 @@
+[package]
+name = "corpus-pipeline"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Somali corpus processing pipeline: clean, language ID, near-dedup"
+
+[lib]
+name = "corpus_pipeline"
+path = "src/lib.rs"
+
+[[bin]]
+name = "benchmark_lid"
+path = "src/bin/benchmark_lid.rs"
+
+[[bin]]
+name = "clean_corpus"
+path = "src/bin/clean_corpus.rs"
+
+[[bin]]
+name = "lid_verify"
+path = "src/bin/lid_verify.rs"
+
+[[bin]]
+name = "near_dedup"
+path = "src/bin/near_dedup.rs"
+
+[[bin]]
+name = "run_pipeline"
+path = "src/bin/run_pipeline.rs"
+
+[[bin]]
+name = "benchmark_min_words"
+path = "src/bin/benchmark_min_words.rs"
+
+[dependencies]
+common = { path = "../common" }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+clap = { workspace = true }
+indicatif = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+sha2 = { workspace = true }
+blake2 = { workspace = true }
+unicode-normalization = { workspace = true }
+encoding_rs = { workspace = true }
+html-escape = { workspace = true }
+regex = { workspace = true }
+whatlang = { workspace = true }
+lingua = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+rustc-hash = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

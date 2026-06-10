@@ -1,9 +1,9 @@
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use serde_json::json;
 
 use crate::stats::Stats;
@@ -29,6 +29,7 @@ impl JsonlWriter {
                 .context("progress bar template")?
                 .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
         );
+        progress.set_draw_target(ProgressDrawTarget::stderr());
         progress.set_message(label.to_string());
 
         Ok(Self {
@@ -48,7 +49,7 @@ impl JsonlWriter {
     }
 
     pub fn write_text_source(&mut self, source: &str, text: &str) -> Result<()> {
-        let line = serde_json::to_string(&json!({ "text": text }))?;
+        let line = serde_json::to_string(&json!({ "text": text, "source": source }))?;
         self.writer.write_all(line.as_bytes())?;
         self.writer.write_all(b"\n")?;
         self.stats.record_source(source, text);
@@ -57,16 +58,76 @@ impl JsonlWriter {
     }
 
     pub fn write_tagged(&mut self, text: &str, source: &str) -> Result<()> {
-        let line = serde_json::to_string(&json!({ "text": text, "source": source }))?;
-        self.writer.write_all(line.as_bytes())?;
-        self.writer.write_all(b"\n")?;
-        self.stats.record(text);
-        self.progress.inc(1);
-        Ok(())
+        self.write_text_source(source, text)
     }
 
     pub fn finish(self) {
         self.progress.finish_and_clear();
+    }
+}
+
+/// Lazily-created sidecar for records dropped during merge exact-dedup.
+pub struct DroppedWriter {
+    path: PathBuf,
+    writer: Option<BufWriter<File>>,
+    pub count: u64,
+}
+
+impl DroppedWriter {
+    pub fn for_output(output: &Path) -> Self {
+        let stem = output
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "merged".into());
+        let path = output.with_file_name(format!("{stem}.dropped.jsonl"));
+        Self {
+            path,
+            writer: None,
+            count: 0,
+        }
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn write(
+        &mut self,
+        source: &str,
+        text: &str,
+        reason: &str,
+        kept_source: Option<&str>,
+    ) -> Result<()> {
+        if self.writer.is_none() {
+            if let Some(parent) = self.path.parent() {
+                fs::create_dir_all(parent)
+                    .with_context(|| format!("creating directory {}", parent.display()))?;
+            }
+            let file = File::create(&self.path)
+                .with_context(|| format!("creating {}", self.path.display()))?;
+            self.writer = Some(BufWriter::new(file));
+        }
+        let mut row = json!({
+            "text": text,
+            "source": source,
+            "reason": reason,
+        });
+        if let Some(kept) = kept_source {
+            row["kept_source"] = json!(kept);
+        }
+        let line = serde_json::to_string(&row)?;
+        let writer = self.writer.as_mut().unwrap();
+        writer.write_all(line.as_bytes())?;
+        writer.write_all(b"\n")?;
+        self.count += 1;
+        Ok(())
+    }
+
+    pub fn finish(mut self) -> Result<()> {
+        if let Some(mut writer) = self.writer.take() {
+            writer.flush()?;
+        }
+        Ok(())
     }
 }
 

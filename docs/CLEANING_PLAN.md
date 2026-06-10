@@ -42,8 +42,8 @@ participation.
 
 | Class | Sources | Unit | Length floor | LID policy | Near-dedup |
 |-------|---------|------|--------------|------------|------------|
-| `document` | HPLT, CC100, mC4, MADLAD | full documents | ~50 words | full gate | exact + MinHash |
-| `sentence` | OPUS, MT560 | aligned sentences | ~3–5 words | tag-only / low threshold | exact only |
+| `document` | HPLT, CC100, mC4, MADLAD | full documents | **25 words** | full gate | exact + MinHash |
+| `sentence` | OPUS, MT560 | aligned sentences | **5 words** | tag-only / low threshold | exact only |
 
 Rationale for splitting near-dedup by class is in [§Near-dedup](#near-deduplication).
 
@@ -155,13 +155,18 @@ The confidence threshold is an **output of the benchmark**, not a copied default
 
 ## 4. Source classes and length floors
 
-**Decision: two classes, not a single threshold.** A uniform 50-word floor would
+**Decision: two classes, not a single threshold.** A uniform high document floor would
 erase the sentence sources; a uniform low floor would admit short web fragments. The
 class lives in the registry and is read from config.
 
-- Document class floor: ~50 words (matches HPLT's own floor; reference dropped ~8.6%,
-  all too-short).
-- Sentence class floor: ~3–5 words.
+- Document class floor: **25 words** (`document_min_words` in `configs/pipeline.toml`).
+  Set by the full-corpus empirical benchmark
+  ([`reports/min_word_threshold_benchmark.md`](../reports/min_word_threshold_benchmark.md),
+  2026-06-10). The earlier ~50-word heuristic (matching HPLT's upstream floor) was not
+  validated on our mix of sources: at 50 words ~94% of rejects were plausible Somali
+  headlines/short paragraphs, not boilerplate; CC100/mC4 drive most rejections while
+  HPLT is already pre-filtered upstream.
+- Sentence class floor: **5 words** (`sentence_min_words`; OPUS/MT560 aligned sentences).
 
 Class also gates near-dedup (next section) and LID policy (above).
 
@@ -255,8 +260,9 @@ signal for pretraining. Do not flatten the whole document to single spaces.
 
 ### Length floor
 
-Apply the per-class floor from the registry (document ~50 words, sentence ~3–5).
-Below floor → reject sidecar.
+Apply the per-class floor from the registry (document **25** words, sentence **5**
+words; see `configs/pipeline.toml` and the min-word benchmark report). Below floor →
+reject sidecar.
 
 ---
 
@@ -310,6 +316,8 @@ above ~10M document-class records.
 
 1. Source priority order for first-seen dedup (proposal above; confirm with overlap
    reports).
-2. LID library and confidence threshold (outputs of the benchmark).
-3. Exact sentence-class length floor within the 3–5 word range.
+2. LID library and confidence threshold — **settled:** `lingua`, `min_confidence =
+   0.50` (see `reports/lid_benchmark.md`).
+3. Length floors — **settled:** document **25** words, sentence **5** words (see
+   `reports/min_word_threshold_benchmark.md`).
 4. U+FFFD reject ratio (proposed ~0.5%).

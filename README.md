@@ -7,8 +7,9 @@ single raw corpus, and (over time) cleaning and preparing text for training.
 
 ## Status
 
-Early development. The **download and merge** stages are implemented in Rust.
-Cleaning, deduplication, and web collection are planned next.
+Early development. **Download, merge, clean, language identification, and
+near-dedup** are implemented in Rust (`corpus-tools` + `corpus-pipeline`).
+Quality filtering and web collection are planned next.
 
 ## Quick start
 
@@ -30,6 +31,13 @@ Merge downloaded sources:
 ```bash
 ./target/release/merge_corpora
 ./target/release/merge_corpora --sources hplt cc100
+```
+
+Run the full processing pipeline (merge → clean → LID → near-dedup):
+
+```bash
+./target/release/run_pipeline --config configs/pipeline.toml
+./target/release/run_pipeline --stages clean,lid,near_dedup --limit 1000
 ```
 
 Full usage and dataset details: see [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md).
