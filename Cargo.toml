@@ -40,6 +40,8 @@ rustc-hash = "2"
 
 # HTTP & IO
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "gzip", "json", "rustls-tls"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+futures = "0.3"
 tempfile = "3"
 flate2 = "1"
 xz2 = "0.1"

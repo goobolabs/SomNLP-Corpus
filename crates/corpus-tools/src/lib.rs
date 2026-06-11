@@ -7,6 +7,7 @@ pub mod madlad;
 pub mod mc4;
 pub mod mt560;
 pub mod parquet_source;
+pub mod quran;
 pub mod stats;
 
 pub use stats::Stats;

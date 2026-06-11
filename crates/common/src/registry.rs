@@ -95,6 +95,13 @@ pub const SOURCES: &[SourceEntry] = &[
         near_dedup: false,
         license_id: "CC-BY-4.0",
     },
+    SourceEntry {
+        key: "quran",
+        class: SourceClass::Sentence,
+        lid_policy: LidPolicy::TagOnly,
+        near_dedup: false,
+        license_id: "Other",
+    },
 ];
 
 /// Look up a source entry by its registry key.

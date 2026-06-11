@@ -19,6 +19,7 @@ See also: [METADATA_SCHEMA.md](METADATA_SCHEMA.md), [PLAN.md](../PLAN.md).
 | `madlad` | MADLAD-400 `so` | web crawl | A | tens of millions | ODC-BY | `download_madlad_so` | done | Clean split default; `--include-noisy` optional |
 | `opus` | OPUS ParaCrawl `en-so` | parallel text | A | parallel sentences | CC0-1.0 | `download_opus_so` | done | Somali column from `translation.so` |
 | `mt560` | MT560 en–so pairs | parallel / religious | A | ~161K pairs | CC-BY-4.0 | `download_mt560_so` | done | Writes `source: mt560` tag in raw JSONL |
+| `quran` | QuranEnc Somali (Yacob Yusuf) | religious | A | ~6.2K verses + footnotes | see source | `download_quran_so` | done | Two outputs: verse translations and footnote explanations |
 
 ### Track A licensing note
 
@@ -96,6 +97,14 @@ from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 - **Access:** Hugging Face parquet; column `som`
 - **Output:** `data/raw/mt560/mt560_so.jsonl`
 - **License:** CC-BY-4.0 (verify on upstream)
+
+### `quran`
+
+- **Upstream:** [QuranEnc Somali (Yacob Yusuf)](https://quranenc.com/api/v1/translation/sura/somali_yacob/1) translation API
+- **Access:** Direct HTTP JSON; suras 1–114 fetched concurrently; fields `translation` + `footnotes`
+- **Output:** `data/raw/quran/translation.json` (verse text) and `data/raw/quran/footnotes.json` (footnote explanations)
+- **Cleaning:** strips leading verse numbers and inline footnote markers from translations; strips leading `[n].` markers from footnotes; empty footnotes dropped
+- **License:** see upstream QuranEnc terms (verify before release)
 
 ---
 

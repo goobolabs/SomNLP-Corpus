@@ -127,6 +127,7 @@ cargo build --release
 ./target/release/download_opus_so
 ./target/release/download_madlad_so
 ./target/release/download_mt560_so
+./target/release/download_quran_so
 
 ./target/release/run_pipeline --config configs/pipeline.toml
 ```
@@ -166,6 +167,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 | `download_opus_so` | [OPUS ParaCrawl](https://huggingface.co/datasets/Helsinki-NLP/opus_paracrawl) (`en-so`) | CC0-1.0 |
 | `download_madlad_so` | [MADLAD-400](https://huggingface.co/datasets/allenai/MADLAD-400) (`so`) | ODC-BY |
 | `download_mt560_so` | [MT560 en–so pairs](https://huggingface.co/datasets/michsethowusu/english-somali_sentence-pairs_mt560) | CC-BY-4.0 |
+| `download_quran_so` | [QuranEnc Somali (Yacob Yusuf)](https://quranenc.com/api/v1/translation/sura/somali_yacob/1) | see source |
 
 Scale estimates, overlap, and per-record licensing: [docs/SOURCES.md](docs/SOURCES.md).
 

@@ -35,6 +35,10 @@ name = "download_mt560_so"
 path = "src/bin/download_mt560_so.rs"
 
 [[bin]]
+name = "download_quran_so"
+path = "src/bin/download_quran_so.rs"
+
+[[bin]]
 name = "merge_corpora"
 path = "src/bin/merge_corpora.rs"
 
@@ -47,11 +51,14 @@ arrow-schema = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true }
 flate2 = { workspace = true }
+futures = { workspace = true }
 indicatif = { workspace = true }
 parquet = { workspace = true }
+regex = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
+tokio = { workspace = true }
 toml = { workspace = true }
 xz2 = { workspace = true }

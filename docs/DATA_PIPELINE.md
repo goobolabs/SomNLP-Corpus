@@ -44,6 +44,7 @@ MT560 records include a source tag:
 ./target/release/download_opus_so   [--limit N] [--no-stream]
 ./target/release/download_madlad_so [--limit N] [--include-noisy]
 ./target/release/download_mt560_so  [--limit N]
+./target/release/download_quran_so  [--limit N] [--concurrency N]
 ```
 
 | Flag | Description |
@@ -62,6 +63,7 @@ Default outputs:
 | OPUS | `data/raw/opus/opus_so.jsonl` |
 | MADLAD | `data/raw/madlad/madlad_so.jsonl` |
 | MT560 | `data/raw/mt560/mt560_so.jsonl` |
+| Qur'an | `data/raw/quran/translation.json` + `data/raw/quran/footnotes.json` |
 
 Recommended download order: HPLT → CC100 → mC4 → OPUS → MADLAD → MT560.
 
