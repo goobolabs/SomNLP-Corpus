@@ -1,0 +1,27 @@
+{
+  "sample_size_requested": 1668080,
+  "sample_size_used": 1668080,
+  "seed": 42,
+  "native_bpe": {
+    "mean": 1.5324,
+    "median": 1.3333,
+    "p95": 2.5,
+    "samples": 1668080
+  },
+  "baselines": {
+    "BERT-base": {
+      "model_id": "bert-base-uncased",
+      "mean": 2.6868,
+      "median": 2.6316,
+      "p95": 3.6667,
+      "samples": 1668080
+    },
+    "XLM-RoBERTa-base": {
+      "model_id": "xlm-roberta-base",
+      "mean": 1.944,
+      "median": 1.7778,
+      "p95": 3.0,
+      "samples": 1668080
+    }
+  }
+}

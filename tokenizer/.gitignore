@@ -1,0 +1,11 @@
+# Local Python env
+.venv/
+
+# Large intermediate corpus (regenerate with prepare_corpus.py)
+somali_raw_corpus.txt
+
+# Run logs
+*.log
+
+# Python cache
+__pycache__/

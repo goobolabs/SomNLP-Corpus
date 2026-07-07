@@ -5,6 +5,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Somali BPE tokenizer pipeline** (`tokenizer/`) — prepare, train, and benchmark scripts
+  using Hugging Face `tokenizers` on the final release corpus
+- Trained **32k vocabulary** model: `tokenizer/somali-bpe-tokenizer.json`
+- Full-corpus benchmark: mean **1.53** tokens/word (native) vs **2.69** (BERT-base) vs
+  **1.94** (XLM-RoBERTa) on 1,668,080 documents
+- Technical note: [tokenizer/PAPER.md](tokenizer/PAPER.md)
+
 ### Planned
 
 - Hugging Face release packaging (`v0.2-clean`)

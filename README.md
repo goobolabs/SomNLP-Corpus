@@ -14,6 +14,7 @@
   <a href="#what-we-built">What we built</a> ·
   <a href="#corpus-results">Corpus results</a> ·
   <a href="#pipeline">Pipeline</a> ·
+  <a href="#tokenizer">Tokenizer</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#sources">Sources</a> ·
   <a href="#docs">Docs</a>
@@ -58,17 +59,18 @@ word/token figures use the final corpus average (~317 words/doc) and are marked 
 v0.1 baseline (without deep clean): 1.77M docs · 591M words — see
 [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md).
 
-| Stage | Documents | Words | Tokens (×1.5) | Removed this stage |
+| Stage | Documents | Words | Tokens | Removed this stage |
 |-------|----------:|------:|--------------:|-------------------:|
 | Downloaded (raw) | 2,633,281 | ~835M | ~1.25B | — |
 | Merged | 2,329,800 | ~738M | ~1.11B | 303,481 |
 | Cleaned | 2,225,791 | ~706M | ~1.06B | 104,009 |
 | LID verified | 2,035,287 | ~645M | ~968M | 190,504 |
 | Deep cleaned | 2,003,228 | ~635M | ~952M | 32,059 |
-| **Final** | **1,668,080** | **528,853,952** | **~793M** | 335,148 |
+| **Final** | **1,668,080** | **528,853,952** | **~810M** | 335,148 |
 
-**Overall:** 2.63M raw rows → **1.67M clean documents** · **529M words** · **~793M subword tokens**
-(×1.5 rule-of-thumb for Somali BPE/SPM). Output: `data/final/final_so.jsonl` (~4.0 GB).
+**Overall:** 2.63M raw rows → **1.67M clean documents** · **529M words** · **~810M subword tokens**
+(native 32k BPE, mean 1.53 tokens/word — see [tokenizer/](tokenizer/)). Output:
+`data/final/final_so.jsonl` (~4.0 GB).
 
 ### What cleaning removed
 
@@ -107,6 +109,35 @@ raw/       merged/              cleaned/  lid/   deep_clean/  final/
 
 Full commands and drop inspection: [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) ·
 specification: [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md).
+
+## Tokenizer
+
+A corpus-native **32k BPE tokenizer** is trained on the final release corpus
+(`data/final/final_so.jsonl`). The trained model ships in-repo; the plain-text
+training file is regenerated locally (~3.3 GB).
+
+| Metric | Value |
+|--------|------:|
+| Vocabulary | 32,000 |
+| Mean tokens/word (native BPE) | 1.53 |
+| Median tokens/word | 1.33 |
+| vs BERT-base | 2.69 (1.75× worse) |
+| vs XLM-RoBERTa | 1.94 (1.27× worse) |
+| Est. corpus tokens | ~810M |
+
+```bash
+cd tokenizer
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+python prepare_corpus.py --stats   # reads data/final/final_so.jsonl
+python train.py                    # writes somali-bpe-tokenizer.json
+python test_tokenizer.py           # benchmark; use --sample-size 1668080 for full corpus
+```
+
+Artifacts: `somali-bpe-tokenizer.json` (tracked), `benchmark_results.json`,
+`tokenizer_stats.json`. Methodology and full results:
+[tokenizer/PAPER.md](tokenizer/PAPER.md).
 
 ## Quick start
 
@@ -203,6 +234,7 @@ somnlp/
 │   ├── corpus-tools/           # downloaders + merge
 │   └── corpus-pipeline/        # clean, LID, deep clean, near-dedup, run_pipeline
 ├── docs/                       # architecture, schema, pipeline specs
+├── tokenizer/                  # Somali BPE training pipeline + trained model
 ├── reports/                    # per-run stats (gitignored)
 └── data/                       # corpus artifacts (gitignored)
 ```
@@ -222,4 +254,5 @@ Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | [PLAN.md](PLAN.md) | Vision and two-track strategy |
 | [ROADMAP.md](ROADMAP.md) | Phases and milestones |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
+| [tokenizer/PAPER.md](tokenizer/PAPER.md) | Somali BPE tokenizer methodology and benchmarks |
 | [CHANGELOG.md](CHANGELOG.md) | Project history |

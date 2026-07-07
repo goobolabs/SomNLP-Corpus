@@ -1,0 +1,8 @@
+{
+  "input": "/home/sharafdin/Documents/Goobo Labs/SomNLP-Corpus/data/final/final_so.jsonl",
+  "output": "/home/sharafdin/Documents/Goobo Labs/SomNLP-Corpus/tokenizer/somali_raw_corpus.txt",
+  "documents": 1668080,
+  "words": 528853952,
+  "characters": 3495161643,
+  "elapsed_seconds": 96.3
+}
