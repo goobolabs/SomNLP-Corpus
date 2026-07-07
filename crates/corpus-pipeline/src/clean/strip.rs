@@ -20,6 +20,11 @@ pub fn strip_invisibles(text: &str) -> String {
     text.chars().filter(|&c| keep(c)).collect()
 }
 
+/// Remove isolated U+FFFD replacement characters from otherwise kept documents.
+pub fn strip_stray_ufffd(text: &str) -> String {
+    text.replace('\u{FFFD}', "")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

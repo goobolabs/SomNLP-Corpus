@@ -175,6 +175,7 @@ fn stage_label(stage: &str) -> String {
         "merge" => "Merge + exact dedup".into(),
         "clean" => "Clean".into(),
         "lid" => "Language ID".into(),
+        "deep_clean" => "Deep clean (v0.2)".into(),
         "near_dedup" => "Near dedup".into(),
         other => other.into(),
     }
@@ -185,7 +186,8 @@ pub fn stage_report_path(stage: &str) -> Option<&'static str> {
         "merge" => Some("reports/01_merge_stats.json"),
         "clean" => Some("reports/02_clean_stats.json"),
         "lid" => Some("reports/03_lid_stats.json"),
-        "near_dedup" => Some("reports/04_near_dedup_stats.json"),
+        "deep_clean" => Some("reports/04_deep_clean_stats.json"),
+        "near_dedup" => Some("reports/05_near_dedup_stats.json"),
         _ => None,
     }
 }
@@ -228,6 +230,18 @@ pub fn stage_summary_line(stage: &str) -> Option<String> {
             let backend = v["backend"].as_str().unwrap_or("?");
             Some(format!(
                 "{input_fmt} in → {kept_fmt} kept, {rejected_fmt} rejected ({pct}) [{backend}]",
+                input_fmt = format_number(input),
+                kept_fmt = format_number(kept),
+                rejected_fmt = format_number(rejected),
+                pct = crate::report::pct(rejected, input),
+            ))
+        }
+        "deep_clean" => {
+            let input = v["input_docs"].as_u64()?;
+            let kept = v["output_docs"].as_u64()?;
+            let rejected = v["rejected_docs"].as_u64()?;
+            Some(format!(
+                "{input_fmt} in → {kept_fmt} kept, {rejected_fmt} rejected ({pct})",
                 input_fmt = format_number(input),
                 kept_fmt = format_number(kept),
                 rejected_fmt = format_number(rejected),

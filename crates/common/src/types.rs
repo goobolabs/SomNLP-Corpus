@@ -101,6 +101,8 @@ pub enum QualityFlag {
     NotSomali,
     /// Excessive U+FFFD replacement characters (heavily corrupted encoding).
     Corrupted,
+    /// Navigation chrome, pipe menus, or other site boilerplate dominated the text.
+    Boilerplate,
 }
 
 /// Whether a record is kept, rejected, or held for review.

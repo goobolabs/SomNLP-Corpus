@@ -114,11 +114,11 @@ from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 |-------|--------------|
 | Per-source raw | `data/raw/<key>/<key>_so.jsonl` |
 | Merged raw | `data/merged/merged_so.jsonl` |
-| Cleaned | `data/cleaned/` (planned) |
-| Deduplicated | `data/deduplicated/` (planned) |
-| Filtered | `data/filtered/` (planned) |
-| Final | `data/final/` (planned) |
-| Rejected (sidecar) | `data/<stage>/<stage>.rejected.jsonl` (planned) |
+| Cleaned | `data/cleaned/cleaned_so.jsonl` |
+| LID verified | `data/lid/lid_so.jsonl` |
+| Deep clean (v0.2) | `data/deep_clean/deep_clean_so.jsonl` |
+| Final (near dedup) | `data/final/final_so.jsonl` |
+| Rejected (sidecar) | `data/<stage>/*.rejected.jsonl` |
 
 ---
 

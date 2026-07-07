@@ -12,6 +12,18 @@ use encoding_rs::WINDOWS_1252;
 const MAX_PASSES: usize = 3;
 const INDICATORS: &[&str] = &["Ã", "Â", "â€", "â„", " Å", "Ã©", "Ã¨", "Ã¶", "Ã¼", "Ã¤"];
 
+/// Rejoin whitespace-split mojibake indicator sequences before round-trip repair.
+pub fn rejoin_split_indicators(text: &str) -> String {
+    text.replace("Ã ¤", "Ã¤")
+        .replace("Ã ©", "Ã©")
+        .replace("Ã ¨", "Ã¨")
+        .replace("Ã ¶", "Ã¶")
+        .replace("Ã ¼", "Ã¼")
+        .replace("â€ ™", "â€™")
+        .replace("â€ \u{009d}", "â€\u{009d}")
+        .replace("ÃƒÂ¢", "Ã¢")
+}
+
 /// Count mojibake indicator occurrences in `text`.
 fn indicator_count(text: &str) -> usize {
     INDICATORS.iter().map(|pat| text.matches(pat).count()).sum()
@@ -49,8 +61,13 @@ fn roundtrip(text: &str) -> Option<String> {
 /// Repair mojibake if present and the repair is an improvement; otherwise return
 /// the input unchanged.
 pub fn fix_mojibake(text: &str) -> String {
-    let mut current = text.to_string();
-    for _ in 0..MAX_PASSES {
+    fix_mojibake_with_passes(text, MAX_PASSES)
+}
+
+/// Repair mojibake with a configurable pass limit (v0.2 deep clean).
+pub fn fix_mojibake_with_passes(text: &str, max_passes: usize) -> String {
+    let mut current = rejoin_split_indicators(text);
+    for _ in 0..max_passes {
         let indicators = indicator_count(&current);
         if indicators == 0 {
             break;

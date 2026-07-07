@@ -33,7 +33,7 @@ Build the stages between merged raw text and a training-ready corpus. Full
 specification: [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md).
 
 ```text
-merge + exact dedup → clean → language identification → near dedup → final
+merge + exact dedup → clean → language identification → deep clean → near dedup → final
 ```
 
 - [x] Merge: write `source` per record, streaming exact dedup (first-seen wins)
@@ -46,7 +46,7 @@ merge + exact dedup → clean → language identification → near dedup → fin
 - [x] Near-dedup — MinHash word-3-gram, k=64, LSH 16×4, τ=0.80, keep-longest,
       document class only, with exact-Jaccard verification
 - [x] `CorpusRecord` metadata: provenance, lang scores, dedup info, quality flags
-- [x] Stage runner (`run_pipeline`) chaining merge → clean → LID → near-dedup
+- [x] Stage runner (`run_pipeline`) chaining merge → clean → LID → deep_clean → near-dedup
 - [x] Per-stage stats reports + reject sidecars
 
 Quality filtering (char-n-gram coverage) is deferred until Wikipedia-so lands in
@@ -54,6 +54,27 @@ Phase 4 to serve as the clean seed.
 
 **Exit:** reproducible pipeline from `data/merged/` to `data/final/` with stats
 reports. See [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) for commands.
+
+---
+
+## Phase 3.5 — v0.2 deep clean (done)
+
+Second-pass cleaning on LID-verified records before near-dedup. Audit and priorities:
+[docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md).
+
+```text
+merge → clean → LID → deep_clean → near dedup → final
+                      deep_clean/              final/
+```
+
+- [x] `deep_clean` binary — source-aware normalize, HTML/contact, boilerplate, segment LID, intra-doc dedup
+- [x] Near-dedup reads `data/deep_clean/deep_clean_so.jsonl`; release output stays `data/final/final_so.jsonl`
+- [x] Stage reports renumbered: `04_deep_clean_stats.json`, `05_near_dedup_stats.json`
+- [x] `run_pipeline` chains all five post-merge stages
+- [x] Full-corpus v0.2 re-run and audit re-measurement (`reports/06_cleaning_audit.md`)
+
+**Exit (met):** 2.63M raw → **1,668,080** final docs · **529M words** · ~4.0 GB
+`data/final/final_so.jsonl`. v0.1 baseline was 1.77M docs · 591M words.
 
 ---
 
@@ -82,14 +103,15 @@ Add targeted Somali text beyond public dumps.
 
 ---
 
-## Phase 6 — Release v0.1.0
+## Phase 6 — Release v0.2-clean
 
-- [ ] Corpus statistics report (docs, tokens, domains, length distributions)
+- [x] Corpus statistics report (docs, tokens, domains, length distributions)
+- [x] Cleaning audit (`reports/06_cleaning_audit.md`)
 - [ ] Dataset card and changelog
 - [ ] Hugging Face dataset upload
 - [ ] Tagged release with checksums
 
-**Exit:** a downloadable, documented, citable `v0.1.0` corpus.
+**Exit:** a downloadable, documented, citable `v0.2-clean` corpus on Hugging Face.
 
 ---
 
@@ -100,6 +122,7 @@ Add targeted Somali text beyond public dumps.
 | M1 | Foundation | done |
 | M2 | Public dataset download + merge | done |
 | M3 | Cleaning, dedup, langid pipeline | done |
+| M3.5 | v0.2 deep clean + full pipeline run | done |
 | M4 | Web & Wikipedia collection | planned |
 | M5 | Extended sources | planned |
-| M6 | Release v0.1.0 | planned |
+| M6 | Release v0.2-clean (Hugging Face) | in progress |

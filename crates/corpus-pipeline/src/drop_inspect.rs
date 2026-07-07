@@ -39,6 +39,11 @@ pub const ALL_DROPS: &[DropSidecar] = &[
         format: DropFormat::Corpus,
     },
     DropSidecar {
+        stage: "deep_clean",
+        path: "data/deep_clean/deep_clean_so.rejected.jsonl",
+        format: DropFormat::Corpus,
+    },
+    DropSidecar {
         stage: "near_dedup",
         path: "data/final/final_so.rejected.jsonl",
         format: DropFormat::Corpus,
@@ -82,7 +87,7 @@ pub fn merge_dropped_path_for(output: &Path) -> PathBuf {
 /// Print a menu of commands to view dropped texts (only for stages that ran).
 pub fn print_inspect_menu(stages: &[String]) {
     print_banner("Inspect dropped texts");
-    println!("  Run one stage:  bash reports/inspect_drops.sh <merge|clean|lid|near_dedup>");
+    println!("  Run one stage:  bash reports/inspect_drops.sh <merge|clean|lid|deep_clean|near_dedup>");
     println!("  Run all:        bash reports/inspect_drops.sh\n");
 
     for sidecar in sidecars_for_stages(stages) {
@@ -217,7 +222,7 @@ pub fn write_inspect_script(stages: &[String]) -> Result<PathBuf> {
     script.push_str("  *)\n");
     script.push_str("    echo \"Unknown stage: $STAGE\"\n");
     script.push_str(
-        "    echo \"Usage: bash reports/inspect_drops.sh [merge|clean|lid|near_dedup|all]\"\n",
+        "    echo \"Usage: bash reports/inspect_drops.sh [merge|clean|lid|deep_clean|near_dedup|all]\"\n",
     );
     script.push_str("    exit 1\n");
     script.push_str("    ;;\n");

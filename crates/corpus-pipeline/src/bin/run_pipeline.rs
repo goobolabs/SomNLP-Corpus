@@ -1,6 +1,5 @@
-//! Pipeline orchestrator: run merge -> clean -> lid -> near_dedup in order by
-//! invoking the per-stage binaries. See docs/CLEANING_PLAN.md and
-//! docs/DATA_PIPELINE.md.
+//! Pipeline orchestrator: run merge -> clean -> lid -> deep_clean -> near_dedup.
+//! See docs/CLEANING_PLAN.md and docs/DATA_PIPELINE.md.
 
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -15,7 +14,7 @@ use corpus_pipeline::progress::{
 use corpus_pipeline::report::{print_banner, print_kv};
 
 const DEFAULT_CONFIG: &str = "configs/pipeline.toml";
-const ALL_STAGES: &[&str] = &["merge", "clean", "lid", "near_dedup"];
+const ALL_STAGES: &[&str] = &["merge", "clean", "lid", "deep_clean", "near_dedup"];
 
 #[derive(Debug, Parser)]
 #[command(about = "Run the Somali corpus processing pipeline end to end")]
@@ -23,11 +22,11 @@ struct Args {
     #[arg(long, default_value = DEFAULT_CONFIG)]
     config: PathBuf,
 
-    /// Comma-separated subset of stages to run (merge,clean,lid,near_dedup).
+    /// Comma-separated subset of stages to run (merge,clean,lid,deep_clean,near_dedup).
     #[arg(long, value_delimiter = ',')]
     stages: Option<Vec<String>>,
 
-    /// Forwarded to the merge, clean, and lid stages for smoke tests.
+    /// Forwarded to merge, clean, lid, and deep_clean for smoke tests.
     #[arg(long)]
     limit: Option<u64>,
 }
@@ -67,6 +66,7 @@ fn stage_binary(stage: &str) -> &'static str {
         "merge" => "merge_corpora",
         "clean" => "clean_corpus",
         "lid" => "lid_verify",
+        "deep_clean" => "deep_clean",
         "near_dedup" => "near_dedup",
         _ => unreachable!(),
     }

@@ -35,3 +35,28 @@ bands = 16
 rows = 4
 tau = 0.80
 seed = 0
+
+[deep_clean]
+unescape_madlad = true
+strip_opus_html = true
+mojibake_max_passes = 5
+strip_stray_ufffd = true
+strip_benign_html = true
+reject_script_html = true
+mask_urls = true
+mask_emails = true
+boilerplate_line_drop = true
+boilerplate_reject_ratio = 0.40
+symbol_ratio_reject = 0.45
+symbol_ratio_review = 0.35
+max_document_words = 10000
+
+[deep_clean.intra_dedup]
+enabled = true
+paragraph_jaccard_tau = 0.95
+
+[deep_clean.lid]
+segment_level = true
+min_somali_char_frac = 0.60
+min_confidence = 0.50
+clip_bytes = 1024

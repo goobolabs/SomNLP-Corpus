@@ -14,7 +14,8 @@ use crate::report::print_kv;
 const MERGE_REPORT: &str = "reports/01_merge_stats.json";
 const CLEAN_REPORT: &str = "reports/02_clean_stats.json";
 const LID_REPORT: &str = "reports/03_lid_stats.json";
-const NEAR_DEDUP_REPORT: &str = "reports/04_near_dedup_stats.json";
+const DEEP_CLEAN_REPORT: &str = "reports/04_deep_clean_stats.json";
+const NEAR_DEDUP_REPORT: &str = "reports/05_near_dedup_stats.json";
 const DEFAULT_OUTPUT_MD: &str = "reports/pipeline_drops.md";
 const DEFAULT_OUTPUT_JSON: &str = "reports/pipeline_drops.json";
 
@@ -194,6 +195,7 @@ fn funnel_from_reports(stages: &[&str], reports: &BTreeMap<String, Value>) -> Ve
     for (stage, key_in, key_out, key_drop) in [
         ("clean", "input_docs", "output_docs", "rejected_docs"),
         ("lid", "input_docs", "output_docs", "rejected_docs"),
+        ("deep_clean", "input_docs", "output_docs", "rejected_docs"),
         ("near_dedup", "input_docs", "output_docs", "removed"),
     ] {
         if !stages.contains(&stage) {
@@ -229,6 +231,7 @@ pub fn write_pipeline_drops_report(
         ("merge", MERGE_REPORT),
         ("clean", CLEAN_REPORT),
         ("lid", LID_REPORT),
+        ("deep_clean", DEEP_CLEAN_REPORT),
         ("near_dedup", NEAR_DEDUP_REPORT),
     ];
 
@@ -279,6 +282,21 @@ pub fn write_pipeline_drops_report(
         all_drops.extend(drops_by_reason(v, "lid"));
         per_source_drops.extend(per_source_stage_drops(v, "lid", "per_source_rejected"));
     }
+    if let Some(v) = reports.get("deep_clean") {
+        all_drops.extend(drops_by_reason(v, "deep_clean"));
+        per_source_drops.extend(per_source_stage_drops(
+            v,
+            "deep_clean",
+            "per_source_drops_by_reason",
+        ));
+        if per_source_drops.iter().all(|r| r.stage != "deep_clean") {
+            per_source_drops.extend(per_source_stage_drops(
+                v,
+                "deep_clean",
+                "per_source_rejected",
+            ));
+        }
+    }
     if let Some(v) = reports.get("near_dedup") {
         all_drops.extend(drops_by_reason(v, "near_dedup"));
         per_source_drops.extend(per_source_stage_drops(
@@ -298,6 +316,7 @@ pub fn write_pipeline_drops_report(
     for (stage, sidecar_key) in [
         ("clean", "reject_sidecar"),
         ("lid", "reject_sidecar"),
+        ("deep_clean", "reject_sidecar"),
         ("near_dedup", "reject_sidecar"),
     ] {
         if let Some(v) = reports.get(stage) {
@@ -430,6 +449,7 @@ fn markdown_body(report: &PipelineDropsReport) -> String {
         ("merge", MERGE_REPORT),
         ("clean", CLEAN_REPORT),
         ("lid", LID_REPORT),
+        ("deep_clean", DEEP_CLEAN_REPORT),
         ("near_dedup", NEAR_DEDUP_REPORT),
     ] {
         if report.stages_run.iter().any(|s| s == stage) {

@@ -27,7 +27,7 @@
 |-------|-------|--------|
 | 1 — Foundation | Workspace, shared types | ✅ Done |
 | 2 — Public datasets | Six downloaders + merge | ✅ Done |
-| 3 — Processing pipeline | Clean → LID → near-dedup | ✅ Done |
+| 3 — Processing pipeline | Clean → LID → deep clean → near-dedup | ✅ Done |
 | 4 — Collection | Wikipedia, web scraping | 🔜 Next |
 | 5 — Release | Hugging Face packaging | Planned |
 
@@ -40,7 +40,7 @@ See [ROADMAP.md](ROADMAP.md) and [PLAN.md](PLAN.md).
 ## What we built
 
 - **Six downloaders** — HPLT, CC100, mC4, OPUS, MADLAD, MT560
-- **Four processing stages** — merge + exact dedup, clean, LID (`lingua`), near-dedup (MinHash + LSH)
+- **Five processing stages** — merge + exact dedup, clean, LID (`lingua`), deep clean (v0.2), near-dedup (MinHash + LSH)
 - **`CorpusRecord` metadata** — provenance, content hash, dedup info, quality flags on every kept line
 - **Reject sidecars** — full text + reason for every dropped record; inspect with `reports/inspect_drops.sh`
 - **Single config** — [`configs/pipeline.toml`](configs/pipeline.toml)
@@ -51,21 +51,24 @@ SomNLP ── SomNLP-Corpus (this repo) → Translate · NER · QA · Instruct �
 
 ## Corpus results
 
-Full 6-source run (HPLT, CC100, mC4, OPUS, MADLAD, MT560) through the complete pipeline.
-Document counts are from per-stage stats; **final word count is measured** on
-`data/final/final_so.jsonl`. Intermediate word/token figures use the final corpus
-average (~333 words/doc) and are marked with ~.
+Full 6-source run (HPLT, CC100, mC4, OPUS, MADLAD, MT560) through the **v0.2 pipeline**
+(merge → clean → LID → deep clean → near-dedup). Document counts are from per-stage
+stats; **final word count is measured** on `data/final/final_so.jsonl`. Intermediate
+word/token figures use the final corpus average (~317 words/doc) and are marked with ~.
+v0.1 baseline (without deep clean): 1.77M docs · 591M words — see
+[docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md).
 
 | Stage | Documents | Words | Tokens (×1.5) | Removed this stage |
 |-------|----------:|------:|--------------:|-------------------:|
-| Downloaded (raw) | 2,633,281 | ~878M | ~1.32B | — |
-| Merged | 2,329,800 | ~777M | ~1.17B | 303,481 |
-| Cleaned | 2,225,791 | ~742M | ~1.11B | 104,009 |
-| LID verified | 2,035,287 | ~678M | ~1.02B | 190,504 |
-| **Final** | **1,774,891** | **591,321,860** | **~887M** | 260,396 |
+| Downloaded (raw) | 2,633,281 | ~835M | ~1.25B | — |
+| Merged | 2,329,800 | ~738M | ~1.11B | 303,481 |
+| Cleaned | 2,225,791 | ~706M | ~1.06B | 104,009 |
+| LID verified | 2,035,287 | ~645M | ~968M | 190,504 |
+| Deep cleaned | 2,003,228 | ~635M | ~952M | 32,059 |
+| **Final** | **1,668,080** | **528,853,952** | **~793M** | 335,148 |
 
-**Overall:** 2.63M raw rows → **1.77M clean documents** · **591M words** · **~887M subword tokens**
-(×1.5 rule-of-thumb for Somali BPE/SPM). Output: `data/final/final_so.jsonl` (~4.5 GB).
+**Overall:** 2.63M raw rows → **1.67M clean documents** · **529M words** · **~793M subword tokens**
+(×1.5 rule-of-thumb for Somali BPE/SPM). Output: `data/final/final_so.jsonl` (~4.0 GB).
 
 ### What cleaning removed
 
@@ -74,16 +77,17 @@ average (~333 words/doc) and are marked with ~.
 | Merge | 303,481 | 11.5% | Exact duplicates (MT560 ~68% within-source) |
 | Clean | 104,009 | 4.5% | Too short (&lt;25 words docs / &lt;5 words sentences) or corrupted |
 | LID | 190,504 | 8.6% | Non-Somali on document-class sources (mC4 highest rate) |
-| Near dedup | 260,396 | 12.8% | Near-duplicate web documents (HPLT ~22% of its input) |
+| Deep clean | 32,059 | 1.6% | Boilerplate (23,948), segment LID (6,906), too long (1,060) |
+| Near dedup | 335,148 | 16.7% | Near-duplicate web documents (text changed after deep clean) |
 
-**32.6%** of raw documents did not survive the pipeline. Re-run locally to reproduce;
-numbers shift slightly with upstream dataset versions.
+**36.7%** of raw documents did not survive the pipeline (v0.1: 32.6%). Re-run locally to
+reproduce; numbers shift slightly with upstream dataset versions.
 
 ## Pipeline
 
 ```text
-download → merge + exact dedup → clean → LID → near dedup → final
-raw/       merged/              cleaned/  lid/   final/
+download → merge + exact dedup → clean → LID → deep clean → near dedup → final
+raw/       merged/              cleaned/  lid/   deep_clean/  final/
 ```
 
 | Stage | Binary | Output |
@@ -92,6 +96,7 @@ raw/       merged/              cleaned/  lid/   final/
 | Merge | `merge_corpora` | `data/merged/merged_so.jsonl` |
 | Clean | `clean_corpus` | `data/cleaned/cleaned_so.jsonl` |
 | Language ID | `lid_verify` | `data/lid/lid_so.jsonl` |
+| Deep clean | `deep_clean` | `data/deep_clean/deep_clean_so.jsonl` |
 | Near dedup | `near_dedup` | `data/final/final_so.jsonl` |
 | All stages | `run_pipeline` | chains the above |
 
@@ -115,7 +120,7 @@ cargo build --release
 
 ```bash
 ./target/release/download_hplt_so --limit 100
-./target/release/run_pipeline --stages merge,clean,lid,near_dedup --limit 100
+./target/release/run_pipeline --stages merge,clean,lid,deep_clean,near_dedup --limit 100
 ```
 
 ### Full corpus build
@@ -196,7 +201,7 @@ somnlp/
 ├── crates/
 │   ├── common/                 # record types, hashing, source registry
 │   ├── corpus-tools/           # downloaders + merge
-│   └── corpus-pipeline/        # clean, LID, near-dedup, run_pipeline
+│   └── corpus-pipeline/        # clean, LID, deep clean, near-dedup, run_pipeline
 ├── docs/                       # architecture, schema, pipeline specs
 ├── reports/                    # per-run stats (gitignored)
 └── data/                       # corpus artifacts (gitignored)
@@ -209,7 +214,8 @@ Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Doc | Description |
 |-----|-------------|
 | [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) | Stage commands, data flow, inspecting drops |
-| [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md) | Cleaning, LID, and dedup specification |
+| [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md) | Phase 3 cleaning, LID, and dedup specification |
+| [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md) | v0.2 deep-clean audit and strategy |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Workspace layout and crate design |
 | [docs/SOURCES.md](docs/SOURCES.md) | Source registry and scale estimates |
 | [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md) | Record metadata and licensing |

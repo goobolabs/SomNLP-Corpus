@@ -107,25 +107,27 @@ flowchart LR
   raw[raw JSONL per source]
   merge[merge_corpora]
   merged[merged_so.jsonl]
-  clean[clean stage]
-  dedup[dedup stage]
-  filter[lang filter]
+  clean[clean]
+  lid[LID]
+  deep[deep clean]
+  near[near dedup]
   final[final corpus]
 
   raw --> merge --> merged
   merged --> clean
-  clean --> dedup
-  dedup --> filter
-  filter --> final
+  clean --> lid
+  lid --> deep
+  deep --> near
+  near --> final
 ```
 
 | Stage | Input | Output | Record shape |
 |-------|-------|--------|--------------|
 | Merge | `data/raw/*/` | `data/merged/` | `RawRecord` |
 | Clean | `data/merged/` | `data/cleaned/` | `CorpusRecord` (initial) |
-| Dedup | `data/cleaned/` | `data/deduplicated/` | `CorpusRecord` + `dedup` |
-| Lang filter | `data/deduplicated/` | `data/filtered/` | `CorpusRecord` + `quality` |
-| Final | `data/filtered/` | `data/final/` | `CorpusRecord` where `disposition = kept` |
+| LID | `data/cleaned/` | `data/lid/` | `CorpusRecord` + `quality` |
+| Deep clean | `data/lid/` | `data/deep_clean/` | `CorpusRecord` + v0.2 flags |
+| Near dedup | `data/deep_clean/` | `data/final/` | `CorpusRecord` + `dedup` |
 
 Rejected records from any stage are written to a **sidecar reject file** with full
 metadata (see [QUALITY_METADATA.md](QUALITY_METADATA.md)), not deleted.

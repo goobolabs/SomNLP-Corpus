@@ -14,7 +14,7 @@ somnlp/
 ├── crates/
 │   ├── common/             # shared types, hashing, source registry
 │   ├── corpus-tools/       # public dataset download + merge
-│   └── corpus-pipeline/    # clean, LID, near-dedup, stage runner
+│   └── corpus-pipeline/    # clean, LID, deep clean, near-dedup, stage runner
 ├── reports/                # per-stage JSON stats (gitignored in practice)
 └── data/                   # corpus artifacts (gitignored)
 ```
@@ -33,6 +33,7 @@ flowchart LR
   subgraph pipelineBins [corpus-pipeline binaries]
     clean[clean_corpus]
     lid[lid_verify]
+    deep[deep_clean]
     near[near_dedup]
     run[run_pipeline]
   end
@@ -42,15 +43,18 @@ flowchart LR
   corpusTools --> merge
   pipeline --> clean
   pipeline --> lid
+  pipeline --> deep
   pipeline --> near
   run --> merge
   run --> clean
   run --> lid
+  run --> deep
   run --> near
   dl --> raw[data/raw]
   merge --> merged[data/merged]
   clean --> cleaned[data/cleaned]
   lid --> lidout[data/lid]
+  deep --> deepout[data/deep_clean]
   near --> final[data/final]
 ```
 
@@ -99,9 +103,10 @@ Library + binaries for post-merge processing. Specification:
 | `io` | JSONL streaming, reject sidecars, stats reports |
 | `clean` | Eight-step cleaning chain + `CorpusRecord` builder |
 | `lid` | Language identification backends + per-class gate policy |
+| `deep_clean` | v0.2 normalization, markup/contact, boilerplate, segment LID, intra-doc dedup |
 | `near_dedup` | MinHash/LSH, exact-Jaccard verify, keep-longest |
 
-Binaries: `clean_corpus`, `lid_verify`, `near_dedup`, `benchmark_lid`, `run_pipeline`.
+Binaries: `clean_corpus`, `lid_verify`, `deep_clean`, `near_dedup`, `benchmark_lid`, `run_pipeline`.
 
 `run_pipeline` orchestrates stages by invoking sibling binaries in
 `target/release/` (or `target/debug/`). It does not depend on `corpus-tools` as a
@@ -117,6 +122,7 @@ Large artifacts live under `data/` and are not tracked in git.
 | `data/merged/` | Merged raw corpus (`RawRecord` with `source` tag) |
 | `data/cleaned/` | Cleaned `CorpusRecord` JSONL |
 | `data/lid/` | LID-verified `CorpusRecord` JSONL |
+| `data/deep_clean/` | Deep-cleaned `CorpusRecord` JSONL (v0.2) |
 | `data/final/` | Near-deduped release-ready `CorpusRecord` JSONL |
 
 Each stage may write a reject sidecar (`*.rejected.jsonl`) and a stats report under

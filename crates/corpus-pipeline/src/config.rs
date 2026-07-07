@@ -13,6 +13,8 @@ pub struct PipelineConfig {
     pub clean: CleanConfig,
     pub lid: LidConfig,
     pub near_dedup: NearDedupConfig,
+    #[serde(default)]
+    pub deep_clean: crate::deep_clean::DeepCleanConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

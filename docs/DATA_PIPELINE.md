@@ -8,12 +8,13 @@ Full specification: [CLEANING_PLAN.md](CLEANING_PLAN.md). Configuration:
 ## Overview
 
 ```text
-download → merge + exact dedup → clean → LID → near dedup → final
-raw/       merged/              cleaned/  lid/   final/
+download → merge + exact dedup → clean → LID → deep clean → near dedup → final
+raw/       merged/              cleaned/  lid/   deep_clean/  final/
 ```
 
-All stages through near-dedup are **implemented**. Quality filtering (char-n-gram
-coverage) is deferred until Wikipedia-so is available as a clean seed (Phase 4).
+All stages through near-dedup are **implemented** (v0.2 adds `deep_clean` between
+LID and near-dedup). Quality filtering (char-n-gram coverage) is deferred until
+Wikipedia-so is available as a clean seed (Phase 4).
 
 ```bash
 cargo build --release
@@ -122,7 +123,24 @@ Length floors (from `configs/pipeline.toml`, benchmarked in
 - Rejects: `data/lid/lid_so.rejected.jsonl`
 - Stats: `reports/03_lid_stats.json`
 
-## Stage 5 — Near dedup
+## Stage 5 — Deep clean (v0.2)
+
+**Goal:** source-aware normalization, markup/contact cleaning, boilerplate removal,
+segment-level LID, intra-document dedup, and promoted quality heuristics. Runs on
+LID-verified records before near-dedup. Specification:
+[CLEANING_STRATEGY.md](CLEANING_STRATEGY.md).
+
+```bash
+./target/release/deep_clean
+./target/release/deep_clean --input data/lid/lid_so.jsonl --output data/deep_clean/deep_clean_so.jsonl
+./target/release/deep_clean --config configs/pipeline.toml --limit 1000
+```
+
+- Output: `data/deep_clean/deep_clean_so.jsonl`
+- Rejects: `data/deep_clean/deep_clean_so.rejected.jsonl`
+- Stats: `reports/04_deep_clean_stats.json`
+
+## Stage 6 — Near dedup
 
 **Goal:** MinHash + LSH near-duplicate removal on **document-class** records only;
 sentence-class passes through unchanged. Exact Jaccard verification at τ=0.80;
@@ -130,12 +148,12 @@ keep-longest per cluster.
 
 ```bash
 ./target/release/near_dedup
-./target/release/near_dedup --input data/lid/lid_so.jsonl --output data/final/final_so.jsonl
+./target/release/near_dedup --input data/deep_clean/deep_clean_so.jsonl --output data/final/final_so.jsonl
 ```
 
-- Output: `data/final/final_so.jsonl`
+- Output: `data/final/final_so.jsonl` (release artifact)
 - Rejects: `data/final/final_so.rejected.jsonl`
-- Stats: `reports/04_near_dedup_stats.json`
+- Stats: `reports/05_near_dedup_stats.json`
 
 ## Stage runner
 
@@ -143,11 +161,12 @@ Run the full post-download pipeline in one command:
 
 ```bash
 ./target/release/run_pipeline --config configs/pipeline.toml
-./target/release/run_pipeline --stages clean,lid,near_dedup
+./target/release/run_pipeline --stages clean,lid,deep_clean,near_dedup
 ./target/release/run_pipeline --limit 1000
 ```
 
-Stages: `merge` → `clean` → `lid` → `near_dedup` (invokes sibling binaries).
+Stages: `merge` → `clean` → `lid` → `deep_clean` → `near_dedup` (invokes sibling
+binaries).
 
 ## Reports and reject sidecars
 
@@ -168,6 +187,7 @@ bash reports/inspect_drops.sh
 bash reports/inspect_drops.sh merge
 bash reports/inspect_drops.sh clean
 bash reports/inspect_drops.sh lid
+bash reports/inspect_drops.sh deep_clean
 bash reports/inspect_drops.sh near_dedup
 ```
 
@@ -176,6 +196,7 @@ bash reports/inspect_drops.sh near_dedup
 | merge | `data/merged/merged_so.dropped.jsonl` |
 | clean | `data/cleaned/cleaned_so.rejected.jsonl` |
 | LID | `data/lid/lid_so.rejected.jsonl` |
+| deep clean | `data/deep_clean/deep_clean_so.rejected.jsonl` |
 | near dedup | `data/final/final_so.rejected.jsonl` |
 
 Quick preview (clean example):
@@ -197,7 +218,8 @@ jq -r '[.reason, .source, .text] | @tsv' \
 | merge | `reports/01_merge_stats.json` | `reports/01_merge_stats.md` | `data/merged/merged_so.dropped.jsonl` |
 | clean | `reports/02_clean_stats.json` | `reports/02_clean_stats.md` | `data/cleaned/cleaned_so.rejected.jsonl` |
 | LID | `reports/03_lid_stats.json` | `reports/03_lid_stats.md` | `data/lid/lid_so.rejected.jsonl` |
-| near dedup | `reports/04_near_dedup_stats.json` | `reports/04_near_dedup_stats.md` | `data/final/final_so.rejected.jsonl` |
+| deep clean | `reports/04_deep_clean_stats.json` | `reports/04_deep_clean_stats.md` | `data/deep_clean/deep_clean_so.rejected.jsonl` |
+| near dedup | `reports/05_near_dedup_stats.json` | `reports/05_near_dedup_stats.md` | `data/final/final_so.rejected.jsonl` |
 
 ### Reading drops by reason
 
@@ -217,6 +239,16 @@ jq -r '[.reason, .source, .text] | @tsv' \
 | `low_lang_score` | Detected Somali but below `min_confidence` |
 
 Sentence-class sources (OPUS, MT560) are tagged only — never rejected at LID.
+
+**Deep clean** — see [CLEANING_STRATEGY.md](CLEANING_STRATEGY.md) for full flag list.
+Common reject reasons:
+
+| Reason | Meaning |
+|--------|---------|
+| `boilerplate` | Too much navigation chrome or site boilerplate removed |
+| `not_somali` | Segment-level LID: Somali fraction below threshold |
+| `html_remnant` | Script/PHP/scaffolding tags remain after strip |
+| `high_symbol_ratio` / `mostly_numbers` | Promoted from review to reject |
 
 **Near dedup** — document-class only:
 

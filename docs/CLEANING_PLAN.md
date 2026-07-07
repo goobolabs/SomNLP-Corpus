@@ -21,9 +21,15 @@ raw/
  → merge + provenance + exact dedup        (data/merged/)
  → clean                                    (data/cleaned/)
  → language identification                  (data/lid/)
+ → deep clean (v0.2)                        (data/deep_clean/)
  → near dedup                               (data/final/)
  → final output + stats + reject sidecars
 ```
+
+**v0.2 deep clean** is specified in [CLEANING_STRATEGY.md](CLEANING_STRATEGY.md) and
+implemented as the `deep_clean` stage between LID and near-dedup. Phase 3 (this
+document) covers merge through near-dedup for v0.1; v0.2 adds the deep-clean pass
+without changing the v0.1 clean/LID/near-dedup semantics documented below.
 
 Quality filtering (char-n-gram coverage against a clean seed) is **deferred** to a
 later phase that depends on Wikipedia-so (Track B). See [§5](#5-quality-filtering-deferred).
@@ -179,7 +185,7 @@ in prior work and depends on a clean Somali seed (Wikipedia-so), which arrives w
 Track B. Everything before it stands alone, so Phase 3 ships:
 
 ```text
-merge → clean → LID → near dedup → final
+merge → clean → LID → deep clean → near dedup → final
 ```
 
 Two notes:

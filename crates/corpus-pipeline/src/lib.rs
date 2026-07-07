@@ -3,6 +3,7 @@
 
 pub mod clean;
 pub mod config;
+pub mod deep_clean;
 pub mod drop_inspect;
 pub mod io;
 pub mod lid;

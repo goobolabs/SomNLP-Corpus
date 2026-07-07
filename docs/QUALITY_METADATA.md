@@ -3,8 +3,8 @@
 How cleaning, deduplication, and language filtering record decisions — without
 deleting failed records.
 
-Algorithms are not implemented yet. This document defines the **metadata contract**
-only. Rust types: `DedupInfo`, `QualityInfo`, `QualityFlag`, `RecordDisposition`.
+Rust types: `DedupInfo`, `QualityInfo`, `QualityFlag`, `RecordDisposition`.
+See [METADATA_SCHEMA.md](METADATA_SCHEMA.md) for field semantics.
 
 ---
 
@@ -75,10 +75,12 @@ Default for new records: `kept` until a stage sets otherwise.
 | `too_long` | validate | Above maximum length |
 | `high_symbol_ratio` | validate | Too many symbols/digits vs. letters |
 | `low_lang_score` | lang filter | Below Somali confidence threshold |
-| `html_remnant` | clean | Residual HTML or markup detected |
-| `mostly_numbers` | validate | Digit-heavy content |
+| `html_remnant` | clean / deep_clean | Residual HTML or markup detected |
+| `mostly_numbers` | validate / deep_clean | Digit-heavy content |
 | `repeated_ngrams` | validate | Boilerplate / spam patterns |
-| `not_somali` | lang filter | Classified as non-Somali |
+| `not_somali` | lang filter / deep_clean | Classified as non-Somali |
+| `corrupted` | clean | Excessive U+FFFD replacement characters |
+| `boilerplate` | deep_clean | Navigation chrome or site boilerplate dominated the text |
 
 Multiple flags may be set on one record.
 
@@ -87,30 +89,30 @@ Multiple flags may be set on one record.
 ## Per-stage metadata flow
 
 ```text
-clean     → may set: html_remnant, too_short
-dedup     → sets: DedupInfo (is_duplicate, duplicate_of, …)
-langid    → sets: lang_score, not_somali, low_lang_score
-validate  → sets: disposition, flags, symbol_ratio
-final     → exports only disposition = kept
+clean       → may set: html_remnant, too_short, corrupted
+lid         → sets: lang_score, not_somali, low_lang_score
+deep_clean  → may set: boilerplate, html_remnant, not_somali; promotes review → reject
+near_dedup  → sets: DedupInfo (is_duplicate, near_duplicate_of, …)
+final       → exports only disposition = kept
 ```
 
 ```mermaid
 flowchart TD
   input[CorpusRecord input]
-  clean[clean stage]
-  dedup[dedup stage]
-  lang[lang filter]
-  validate[validate gates]
+  clean[clean]
+  lid[LID]
+  deep[deep clean]
+  near[near dedup]
 
   input --> clean
-  clean -->|kept| dedup
+  clean -->|kept| lid
   clean -->|rejected| rejectFile[rejected.jsonl]
-  dedup -->|kept| lang
-  dedup -->|duplicate| rejectFile
-  lang -->|kept| validate
-  lang -->|rejected| rejectFile
-  validate -->|kept| finalOut[final corpus]
-  validate -->|rejected| rejectFile
+  lid -->|kept| deep
+  lid -->|rejected| rejectFile
+  deep -->|kept| near
+  deep -->|rejected| rejectFile
+  near -->|kept| finalOut[final corpus]
+  near -->|duplicate| rejectFile
 ```
 
 ---
@@ -138,16 +140,8 @@ Same schema as primary output — full `CorpusRecord` JSON lines:
 
 ---
 
-## Configuration (planned)
+## Configuration
 
-Thresholds will live in a config file, not hard-coded:
-
-```toml
-[quality]
-min_chars = 200
-max_chars = 100_000
-min_lang_score = 0.65
-max_symbol_ratio = 0.30
-```
-
-Each release embeds the resolved config hash in the corpus manifest for reproducibility.
+Thresholds live in `configs/pipeline.toml` (`[clean]`, `[lid]`, `[deep_clean]`,
+`[near_dedup]`). Each release should embed the resolved config hash in the corpus
+manifest for reproducibility.

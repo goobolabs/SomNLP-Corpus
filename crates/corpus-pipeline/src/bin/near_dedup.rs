@@ -18,10 +18,10 @@ use corpus_pipeline::report::{
 };
 use serde::Serialize;
 
-const DEFAULT_INPUT: &str = "data/lid/lid_so.jsonl";
+const DEFAULT_INPUT: &str = "data/deep_clean/deep_clean_so.jsonl";
 const DEFAULT_OUTPUT: &str = "data/final/final_so.jsonl";
 const DEFAULT_CONFIG: &str = "configs/pipeline.toml";
-const DEFAULT_REPORT: &str = "reports/04_near_dedup_stats.json";
+const DEFAULT_REPORT: &str = "reports/05_near_dedup_stats.json";
 
 #[derive(Debug, Parser)]
 #[command(about = "Near-deduplicate the corpus (document class only) into final output")]
@@ -77,7 +77,7 @@ fn main() -> Result<()> {
     let mut rejects = rejects;
 
     let mut report = NearDedupReport {
-        phase: "04_near_dedup",
+        phase: "05_near_dedup",
         generated_at: chrono::Utc::now().to_rfc3339(),
         tau: config.near_dedup.tau,
         output_file: args.output.display().to_string(),
@@ -223,7 +223,7 @@ fn main() -> Result<()> {
 
 fn markdown_body(report: &NearDedupReport, reject_count: u64) -> String {
     let mut md = String::new();
-    md.push_str("# Phase 4 — Near deduplication\n\n");
+    md.push_str("# Phase 5 — Near deduplication\n\n");
     md.push_str(&format!("- Generated: {}\n", report.generated_at));
     md.push_str(&format!("- Tau (Jaccard): {}\n", report.tau));
     md.push_str(&format!("- Input: {}\n", report.input_docs));

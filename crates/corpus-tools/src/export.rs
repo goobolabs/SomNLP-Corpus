@@ -5,6 +5,7 @@ use tempfile::NamedTempFile;
 
 use crate::hf::HfClient;
 use crate::jsonl::{is_non_empty, JsonlWriter};
+use crate::normalize::{normalize_export_text, unescape_literal_escapes};
 
 fn resolve_local_shard(
     hf: &HfClient,
@@ -120,6 +121,7 @@ pub fn export_parquet_struct_shards(
             if !is_non_empty(&text) {
                 continue;
             }
+            let text = normalize_export_text("opus", &text);
             writer.write_text(&text)?;
             written += 1;
         }
@@ -170,6 +172,7 @@ pub fn export_json_gz_shards(
             if !is_non_empty(&text) {
                 continue;
             }
+            let text = unescape_literal_escapes(&text);
             writer.write_text(&text)?;
             written += 1;
         }

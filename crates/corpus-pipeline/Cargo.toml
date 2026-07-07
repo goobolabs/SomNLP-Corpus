@@ -23,6 +23,10 @@ name = "lid_verify"
 path = "src/bin/lid_verify.rs"
 
 [[bin]]
+name = "deep_clean"
+path = "src/bin/deep_clean.rs"
+
+[[bin]]
 name = "near_dedup"
 path = "src/bin/near_dedup.rs"
 
