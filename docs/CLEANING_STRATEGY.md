@@ -1,338 +1,487 @@
 # Post-Clean Audit & v0.2 Cleaning Strategy
 
-Status: research / proposal. Not yet locked.
-Author basis: empirical audit of the v0.1 pipeline output, 2026-07-07.
+**Status:** research / proposal — not yet locked  
+**Audit date:** 2026-07-07  
+**Corpus:** `data/final/final_so.jsonl` — **1,774,891** documents · **591,321,860** words · **333** avg words/doc · **4.5 GB**
 
-This document audits what the **v0.1** pipeline (`docs/CLEANING_PLAN.md`) actually
-produced on the full Somali corpus, catalogs the residual defects that survive into
-`data/cleaned/` (and, where measurable, `data/lid/`), and proposes a prioritized
-**v0.2** cleaning strategy. It is a follow-up to `CLEANING_PLAN.md`, not a replacement:
-the plan specifies the pipeline; this document specifies the *next* round of fixes,
-grounded in measured defect rates rather than expectation.
+This document audits what the **v0.1** pipeline ([CLEANING_PLAN.md](CLEANING_PLAN.md)) produced on the full Somali corpus, catalogs residual defects, and proposes a prioritized **v0.2** cleaning strategy before Hugging Face release. It is a follow-up to `CLEANING_PLAN.md`, not a replacement: the plan specifies Phase 3; this document specifies the *next* round of fixes, grounded in measured defect rates.
 
-Where a recommendation touches code, the owning module is named so the change has a
-home. Where it touches a knob, the `configs/pipeline.toml` key is named.
+Companion docs: [DATA_PIPELINE.md](DATA_PIPELINE.md), [QUALITY_METADATA.md](QUALITY_METADATA.md).
+
+Where a recommendation touches code, the owning module is named. Where it touches a knob, the `configs/pipeline.toml` key is named.
+
+---
+
+## Executive summary
+
+Phase 3 (merge → clean → LID → near-dedup) produces a large, reproducible corpus at the documented scale. **A measurable tail of specific artifacts still survives** — web crawl noise, mixed-language boilerplate, broken escaping, and encoding residue — concentrated in HPLT, mC4, MADLAD, and CC100.
+
+**Why current gates miss them:**
+
+1. **Review flags do not reject** — `html_remnant`, `high_symbol_ratio`, and `mostly_numbers` are recorded but records stay `disposition = kept`.
+2. **LID clips to the first 2,000 bytes** — Somali headlines pass; English/Swedish bodies and nav chrome survive.
+3. **No boilerplate / URL / markup stripping** — conservative by design in v0.1.
+4. **Source-specific export bugs** — MADLAD stores literal `\n`; OPUS retains escaped HTML closers.
+5. **Mojibake repair is CP1252-only, ≤3 passes** — split-indicator and double-encoded forms survive.
+
+**Recommendation:** Run a **v0.2 deep-clean pass** on `data/final/final_so.jsonl` (or re-run from `data/merged/` with enhanced stages), then **re-near-dedup**. Prioritize **export fixes (P0)**, **literal unescaping**, **URL/email masking**, **boilerplate removal**, and **segment-level LID**. Defer char-n-gram quality filtering until Wikipedia-so (Track B).
+
+**Verdict:** the pipeline is not broken — it needs a deliberate second pass on known defect classes.
 
 ---
 
 ## 1. Method
 
-The run under audit:
+### 1.1 Pipeline funnel (v0.1 full run)
 
 ```text
-merge  2,633,281 in → 2,329,800 kept   (exact dedup, 11.52% dropped)
-clean  2,329,800 in → 2,225,791 kept   (4.46% rejected; 21,405 flagged for review)
-lid    running at audit time — output partial (mt560, opus, cc100, mc4 processed;
-       madlad, hplt not yet). Post-LID rates below are from this partial output.
-near-dedup  pending
+merge      2,633,281 in → 2,329,800 kept   (exact dedup, 11.52% dropped)
+clean      2,329,800 in → 2,225,791 kept   (4.46% rejected; 21,405 flagged review)
+lid        2,225,791 in → 2,035,287 kept   (8.56% dropped: not_somali 190,375)
+near-dedup 2,035,287 in → 1,774,891 kept   (12.79% dropped: near_duplicate 260,396)
+────────────────────────────────────────────────────────────────────────────────
+FINAL      data/final/final_so.jsonl       1,774,891 docs
 ```
 
-Sampling for defect measurement:
+LID reject languages: English 106,399, Tagalog 45,182, Swahili 21,547, Indonesian 6,791 — almost all mC4 drops (188,860). Near-dedup removed most from HPLT (175,777), consistent with templated crawl boilerplate collapsing.
 
-- **Cleaned corpus (all 6 sources):** a spread sample of every 40th record across
-  the full `data/cleaned/cleaned_so.jsonl` (~55.6k docs), plus a per-document
-  single-pass measurement on every-4th-of-spread (~13.9k docs). "Per-document" means
-  *the document contains at least one occurrence*; each doc's text was flattened
-  (newlines/tabs → space) before matching so multi-line documents count once.
-- **LID-kept output (partial):** every 20th record of `data/lid/lid_so.jsonl`
-  (~29.6k docs, only the four sources processed so far).
+**32.6%** of raw documents were removed overall; the kept **67.4%** still carry noise not targeted by Phase 3.
 
-All probe commands are shell one-liners over `jq`/`grep`/`awk`; rates are reproducible
-from the sampled files. Numbers below are rounded; treat them as magnitudes, not
-exact corpus-wide constants.
+### 1.2 Dual audit methodology
+
+Two complementary measurements were merged into this document:
+
+| Method | Scope | Tools | Use |
+|--------|-------|-------|-----|
+| **Spread sample** | Every 30th final record (~59.2k docs) | `jq` / `grep` / `awk`; text flattened to one line before match | Conservative per-document rates; tracks **cleaned → final** movement |
+| **Full corpus scan** | All 1,774,891 records | Python pattern detectors | Corpus-wide magnitudes; per-source breakdown; export-bug detection |
+
+**Important:** rates differ between methods because (a) detectors differ in breadth (e.g. full scan matches `.com` domains, spread sample may use stricter URL patterns), and (b) spread sample flattens newlines, which **under-counts** MADLAD literal `\n` issues. Treat spread-sample rates as conservative floors; full-scan rates as upper-bound magnitudes. Re-measure both after v0.2.
+
+### 1.3 Manual sampling
+
+Random and targeted samples from `final_so.jsonl`, reject sidecars, and raw sources. Compared raw → final on 2,000–3,000 records per source (e.g. MADLAD escaped newlines: 99.9% in raw and final — unchanged by pipeline).
 
 ---
 
 ## 2. What v0.1 already does well (baseline — keep)
 
-The audit confirms the pipeline is sound and most cleaning goals are met. Do not
-regress these:
+Do not regress these:
 
-- **Exact dedup is doing real work:** 11.5% removed at merge (17.4% inside HPLT
-  alone), plus a post-clean exact recheck (42 more).
-- **Mojibake repair fires and holds:** the CP1252 round-trip
-  (`clean/mojibake.rs`) reduced the dominant artifact family to a **0.11%**
-  per-document survivor rate in cleaned output. Guards (indicator-gated, improve-only,
-  ≤3 passes) prevented over-correction — clean `é`/`ñ` text was not damaged.
-- **U+FFFD reject gate works:** heavily corrupted docs (ratio > 0.5%) are dropped;
-  `corrupted` accounts for 5,148 rejects, concentrated in mC4 (5,004).
-- **Two-class length floors behave as designed:** the `too_short` reason (98,819,
-  95% of all rejects) is dominated by CC100/mC4 short web fragments; HPLT (pre-filtered
-  upstream) and the sentence-class sources barely trip it.
-- **LID is catching OCR garbage cleanly:** sampled LID rejects are exactly the
-  failure mode we want gone — scanned-page noise like `oo oo co ^ 2 . - - to CTl`
-  with `lang_score` in the 0.1–0.3 range. Of LID-*kept* docs, **99.9%** score ≥ 0.8,
-  so the 0.50 threshold is rarely the deciding factor; the kept set is high-confidence
-  Somali.
-
-The verdict is not "the pipeline is broken." It is "a measurable tail of specific
-artifacts survives, and each one now has enough data to be handled deliberately."
+- **Exact dedup:** 11.5% removed at merge (17.4% within HPLT alone) + 42 post-clean exact recheck.
+- **Mojibake repair:** CP1252 round-trip ([`clean/mojibake.rs`](../crates/corpus-pipeline/src/clean/mojibake.rs)) cut the dominant artifact family to ~0.07% survivors. Improve-only guard prevents damaging clean `é`/`ñ` text.
+- **U+FFFD reject gate:** ratio > 0.5% drops heavily corrupted docs (5,148 rejects, mostly mC4).
+- **Two-class length floors:** 25-word document / 5-word sentence floors behave as designed (`too_short` = 98,819 rejects).
+- **LID on OCR garbage:** sampled rejects are genuine noise with low `lang_score`. Of LID-kept docs, **99.9%** score ≥ 0.8.
+- **Near dedup:** removed 12.8% at final stage; also collapsed much HTML-bearing boilerplate (literal tags 0.83% → 0.15% from cleaned to final).
+- **Reject sidecars + stats:** preserve for v0.2 tuning.
 
 ---
 
 ## 3. Findings: residual defects
 
-Per-document rates on the cleaned spread sample (all 6 sources). "Owner" is the stage
-that should fix it; "v0.1 disposition" is what happens today.
+### 3.1 Summary tables
 
-| # | Defect | Rate (cleaned) | v0.1 disposition | Proposed owner |
-|---|--------|---------------|------------------|----------------|
-| A | Mojibake survivors (`Ã`, `â€`) | 0.11% | passed through | clean/mojibake |
-| B | Stray U+FFFD (below reject ratio) | 0.27% | kept, unflagged | clean/gates |
-| C | Literal HTML/script/PHP tags | 0.83% | flagged `HtmlRemnant`, kept | clean (new step) |
-| D | URLs | ~5.7% | kept as-is | clean (new step) |
-| E | Email addresses | ~5.8% | kept as-is | clean (new step) |
-| F | Code-switch / non-Somali blocks | ~1.0% (0.38% post-LID) | mostly kept | LID (segment-level) |
-| G | HTML entities left encoded | 0.02% | negligible | (no action) |
-| H | Short-doc tail (`< 40` words) | ~17% kept | kept by design | policy decision |
-| I | Cross-document boilerplate / near-dups | not yet measured | near-dedup pending | near-dedup |
+**Spread sample (N≈59.2k, per-document, cleaned → final):**
 
-### A. Mojibake survivors — indicator-splitting gap
+| # | Defect | cleaned → **final** | Today | Proposed owner |
+|---|--------|--------------------|-------|----------------|
+| D | **URLs** | 5.7% → **5.03%** | kept | clean (mask) |
+| E | **Email (PII)** | 5.8% → **5.44%** | kept | clean (mask) |
+| F | Code-switch / foreign boilerplate | 1.0% → **0.52%** | mostly kept | LID (segment-level) |
+| B | Stray U+FFFD (below reject ratio) | 0.27% → **0.28%** | kept, unflagged | clean/strip |
+| C | Literal HTML tags | 0.83% → **0.15%** | flagged `HtmlRemnant` | clean (strip/reject) |
+| A | Mojibake survivors | 0.11% → **0.07%** | passed through | clean/mojibake |
+| — | script/php/style scaffolding | — → **0.02%** | flagged, kept | clean (reject) |
+| G | HTML entities encoded | 0.02% → **0.01%** | negligible | (no action) |
+| H | Short-doc tail (`< 40` words) | ~17% → **6.1%** | kept by design | policy |
 
-0.11% of cleaned docs still contain `Ã`/`â€`. Inspection shows the survivors are not
-random; the dominant pattern is **whitespace-split indicators**, e.g.:
+**Union URL-or-email (spread sample): ~9.78%** — largest single unaddressed need in conservative measurement.
 
-```text
-maalinta shaqaalaha ( vappupÃ ¤ ivÃ ¤ )      # should be "vappupäivä"
-```
+**Full corpus scan (all 1.77M, overlapping detectors):**
 
-The repair in `clean/mojibake.rs` gates on contiguous indicator strings
-(`"Ã"`, `"â€"`, `"Ã¤"`, …). When the source inserted a space or tag boundary between
-the lead byte and the continuation (`Ã ¤` instead of `Ã¤`), the round-trip either
-never fires or cannot reassemble the pair, and the artifact survives. Some survivors
-also co-occur with `<?php`/`</a>` fragments, i.e. the mojibake sits inside HTML noise
-that itself should go (finding C).
+| Issue class | Records | % of corpus |
+|-------------|--------:|------------:|
+| URL / domain remnants | ~334,000 | 18.8% |
+| Foreign-language markers (EN/Scandinavian) | ~237,000 | 13.4% |
+| Literal escaped `\n` (MADLAD) | ~186,000 | 10.5% |
+| Site boilerplate / nav chrome | ~77,000 | 4.3% |
+| Pipe-separated navigation | ~59,000 | 3.3% |
+| WordPress / truncation (`[…]`) | ~32,000 | 1.8% |
+| Arabic script (3+ chars) | ~17,500 | 1.0% |
+| HTML tags (unstripped) | ~3,600 | 0.2% |
+| Residual mojibake | ~1,300 | 0.07% |
+| Intra-doc duplicate sentences | ~3,800 | 0.2% |
 
-### B. Stray U+FFFD below the reject threshold
+Review flags on **kept** records: `html_remnant` 2,685 · `mostly_numbers` 306 · `high_symbol_ratio` 7.
 
-0.27% of cleaned docs carry a lone `�`. These are *not* the corrupted docs the 0.5%
-ratio gate targets — they are otherwise-clean Somali sentences with a single
-irrecoverable character, e.g.:
+**Structural notes:**
 
-```text
-cc100 | Haweeneydii carruurtaasi dhashay ayaa iyadu sheegtay iney taleefan kula … �
-```
+- Near-dedup collapsed templated HTML boilerplate for free.
+- LID halved code-switch rate (1.0% → 0.52%) on monolingual foreign docs but **cannot see** Somali-header / English-body pages.
+- CC100 and HPLT have **<0.2% LID rejection** vs mC4 **22.7%** — head-clip bias.
 
-At one replacement char per long document the ratio sits far under 0.005, so the doc
-is kept and the `�` is neither removed nor flagged. Low severity, but it is visible
-noise in the final text and trivial to address.
+### 3.2 Root cause map by source
+
+| Source | Kept docs | Dominant defects | Fix location |
+|--------|----------:|------------------|--------------|
+| **hplt** | 620,964 | URLs (~22%), foreign EN (~13%), boilerplate | Paragraph LID; boilerplate strip; URL mask |
+| **mc4** | 605,623 | URLs (~25%), foreign EN (~21%), pipe nav (~7%) | Paragraph LID; boilerplate strip |
+| **madlad** | 185,907 | **Escaped `\n` (~100%)**, URLs, foreign EN | **Export unescape (P0)** |
+| **cc100** | 301,074 | Ellipsis/truncation, dup paragraphs, mojibake | Intra-doc dedup; extended mojibake |
+| **mt560** | 49,197 | Mostly clean (parallel) | Extended mojibake only |
+| **opus** | 12,126 | HTML escape suffixes | **Downloader strip (P0)** |
+
+---
+
+## 4. Defect catalog (detail)
+
+### A. Mojibake survivors
+
+~0.07% (spread) / ~1,284 (full scan). Two patterns:
+
+1. **Un-repaired smart quotes:** `Masâ€™uuliyiinta … â€œWaa ayaan darro … laâ€™aan` — improve-only guard may reject valid repair when no other CP1252 content tips the comparison.
+2. **Whitespace-split / multiply-encoded:** `vappupÃ ¤ ivÃ ¤`; deep nests like `daÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢deedu` exceeding 3-pass cap.
+
+### B. Stray U+FFFD below reject threshold
+
+~0.28%. Lone `�` in otherwise-clean Somali; ratio far under 0.005 so doc is kept unflagged.
 
 ### C. Literal HTML / script / PHP remnants
 
-0.83% of cleaned docs contain literal tags. v0.1 deliberately **flags but does not
-strip** these (`HtmlRemnant`, 17,432 flagged corpus-wide) — the plan calls tag
-stripping "where conservative cleaning turns destructive" and defers it. The audit
-shows the flagged content splits into two populations:
+0.15% tags in final (down from 0.83% cleaned). v0.1 **flags but does not strip** (`HtmlRemnant`, 17,432 flagged at clean). Split populations:
 
-- **Benign inline tags** in otherwise-good Somali text: `</a>`, `<br>`, `<b>`, `<p>`.
-- **Genuine junk** that should not be in a text corpus at all: `<?php`, `</script>`,
-  `<div class="recruiter-section">`, `<mutation>`, `<char>`. Example:
-
-```text
-Su-aalo Diini Ah · Hidaha iyo Dhaqanka ... <?php </a> Kismaayo- Shirka Golaha …
-```
-
-The blanket "flag, never strip" rule is now too coarse: it leaves script/markup
-scaffolding embedded in kept documents.
+- **Benign:** `</a>`, `<br>`, `<p>`, `<b>`
+- **Junk:** `<?php`, `</script>`, `<mutation>`, `<char>`
 
 ### D & E. URLs and email addresses
 
-~5.7% of cleaned docs contain a URL; ~5.8% contain an email address. Neither is
-touched by any stage today. URLs concentrate in the web-crawl sources (mC4 ≫ HPLT >
-MADLAD; CC100 almost none), consistent with crawl boilerplate — navigation, "share
-this", contact footers:
+Spread: ~5% URLs, ~5.4% emails, ~9.8% union. Full scan: ~18.8% URL-like (broader detector). Concentrated in mC4 ≫ HPLT > MADLAD; CC100 almost none. Emails are **PII** — mask recommended for pretraining release.
 
-```text
-Puh : 029 512 000            # phone/contact fragments (also trip mostly_numbers)
-Tel . 045 639 6274
-www.aylaseven.net Favicon 12a3 …
-```
+### F. Code-switching / non-Somali blocks
 
-For a **pretraining** corpus a bare URL or email token is low-value and mildly
-privacy-sensitive (emails are PII). This is a policy call, not an obvious bug — see §4.D.
+Document-level LID clips first 2000 bytes ([`lid/stage.rs`](../crates/corpus-pipeline/src/lid/stage.rs)). Failure modes: wholly mislabeled mC4 `so` pages; Somali header + English/Swedish body (e.g. `La daabacay måndag 16 februari 2015`).
 
-### F. Code-switching / non-Somali blocks survive document-level LID
+### G. HTML entities
 
-The document-level LID gate clips to the first 2000 bytes (`detect_clip_bytes`) and
-accepts the doc if the winner is Somali. Two failure modes leak through:
-
-1. **Mislabeled monolingual docs** in mC4's `so` split that are wholly another
-   language (English, Oromo, Telugu song-lyric pages, Urdu/Arabic Quran-lesson pages).
-2. **Code-switched docs** where Somali dominates the clipped head but large English
-   blocks follow.
-
-~1.0% of *cleaned* docs are English-heavy by a stopword heuristic; this drops to
-~0.38% in the partial LID-kept output, so doc-level LID removes some but not all. A
-whole-document winner cannot see a clean-Somali-header / English-body document.
-
-### G. HTML entities — effectively solved
-
-Only 0.02% of cleaned docs still contain encoded entities. The decode-once step
-(`clean/entities.rs`) works; no action needed.
+~0.01% survivors. [`clean/entities.rs`](../crates/corpus-pipeline/src/clean/entities.rs) works; no action needed.
 
 ### H. Short-document tail
 
-~5.8% of kept docs are `< 25` words and ~17% are `< 40`. This is **by design**: the
-document floor is 25 words (validated in `reports/min_word_threshold_benchmark.md`)
-and sentence-class sources (mt560/opus) legitimately sit below 25. Flagged here only
-so the volume is a conscious choice, not an accident — see §4.H.
+~6.1% of kept docs `< 40` words; by design (25-word floor benchmark-backed). Policy decision only — see §6.6.
 
-### I. Cross-document boilerplate
+### I. Cross-document vs intra-document boilerplate
 
-Not yet measurable (near-dedup pending). Within-document line repetition is already
-low (≈1 in 15k docs has a line repeated ≥4×), so the risk is *cross*-document
-templated boilerplate, which MinHash/LSH is designed to catch. Re-audit after the
-stage completes.
+Near-dedup **completed** — templated footers largely collapsed. **Intra-document** line repetition is low (~0.22% duplicate sentences full scan) but CC100 syndication duplicates matter. Residual cross-doc boilerplate: re-probe if templated footers remain >1% after v0.2.
 
----
+### J. Literal escape sequences — MADLAD (P0 export bug)
 
-## 4. Proposed v0.2 strategy
+**~186,083 records (10.5%); 99.98% of MADLAD kept docs.**
 
-Ordered by value-to-risk. Every step keeps the pipeline's existing contract: stream
-where possible, route removals to a sidecar with a reason, never silently delete, and
-write before/after counts to the stage report.
+```text
+Madaxweyneyaasha Somaaliya Iyo Kenya ...\nMarch 6, 2019 - Written by C M\nNairobi-(GLN): ...
+```
 
-### Priority 1 — Widen mojibake repair to split indicators (finding A)
+**Root cause:** MADLAD JSONL.gz escaped strings written verbatim ([`export_json_gz_shards`](../crates/corpus-tools/src/export.rs)). Clean stage does not unescape.
 
-- **What:** before the round-trip in `clean/mojibake.rs`, add a narrow pre-pass that
-  rejoins whitespace-split indicator pairs (`Ã ¤` → `Ã¤`, `â€ ™` → `â€™`) *only* when a
-  known continuation byte follows a lone indicator lead across a single space. Then the
-  existing improve-only round-trip runs unchanged.
-- **Why safe:** the improve-only guard (accept only if indicator count drops and no new
-  U+FFFD) still governs the result, so a wrong rejoin is discarded. Keep the change
-  behind the same acceptance test.
-- **Golden set:** extend `tests/mojibake_golden.rs` with real split-indicator lines
-  sampled from the survivors above. Do not synthesize them.
-- **Expected effect:** removes most of the 0.11% survivor tail.
+### K. OPUS HTML escape residue (P0 export bug)
 
-### Priority 2 — Strip stray U+FFFD from otherwise-kept docs (finding B)
+Many records with `<\/a><\/blockquote>\n` suffixes from ParaCrawl `translation.so`. Fix at download or pre-clean.
 
-- **What:** in `clean/strip.rs` (invisible-char stripping), also drop isolated U+FFFD.
-  Order matters: this runs **after** mojibake repair and **after** the U+FFFD *ratio*
-  gate has had its say, so heavily-corrupted docs are still rejected on ratio, but a
-  surviving lone `�` in a kept doc is removed rather than shipped.
-- **Why safe:** U+FFFD is never legitimate content; removing it cannot corrupt real text.
-- **Knob:** none needed; keep `ufffd_reject_ratio` as the reject gate.
+### L. Site boilerplate and navigation (full scan)
 
-### Priority 3 — Split the HTML-remnant policy: strip scaffolding, keep prose (finding C)
+Boilerplate markers: 77,113 (4.3%). Pipe nav: 59,154 (3.3%). WordPress: 18,239 (1.0%). Example:
 
-The blanket flag-don't-strip rule is too coarse. Replace it with a two-tier policy in
-a new `clean` step run **before** the length gate:
+```text
+HOMEGABAYODUCOOYINQURAAN... CONTACT US
+Live Help/Live Chat
+Radio Saajid 682-710-3731 »
+```
 
-- **Tier 1 — reject** documents containing executable/structural scaffolding that marks
-  the record as not-prose: `<?php`, `<script>…</script>` (and its contents),
-  `<style>…</style>`, `<mutation>`, `<char>`. These are extraction failures, not text.
-- **Tier 2 — strip-then-keep** benign inline tags (`<a>`, `<br>`, `<p>`, `<b>`, `<i>`,
-  `<span>`, `<li>`, `<div>`) by removing the tag but preserving inner text, then re-run
-  whitespace normalization.
-- **Keep the flag** (`HtmlRemnant`) on any doc that still matches the tag regex after
-  stripping, so residue remains auditable.
-- **Why now and not in v0.1:** v0.1 deferred stripping to avoid destroying text before
-  we had data. We now have data: the junk tier is a distinct, small, safely-identifiable
-  population. Gate the reject tier conservatively (exact tag tokens, not a broad regex)
-  and route rejects to the sidecar for spot-checking.
-- **Risk:** medium. Validate on the `HtmlRemnant`-flagged sidecar population before and
-  after; require that Tier-1 rejects are visually confirmed junk on a sample.
+### M. Arabic / non-Latin script
 
-### Priority 4 — URL/email handling (findings D, E) — decide policy first
+17,498 records (0.99%) with Arabic runs — often legitimate (Qur'an citations). Tag, do not blanket-remove; reject only if Arabic ratio >40% and LID ≠ Somali.
 
-This is a policy decision, not a bug fix; pick one and record it in the changelog:
+### N. Smart quotes (typographic punctuation)
 
-- **Option A (recommended for pretraining): mask, don't drop.** Replace URLs with a
-  `⟨url⟩` sentinel and emails with `⟨email⟩` in `clean` (new step, after entity/mojibake,
-  before whitespace). Preserves sentence structure and surrounding Somali text while
-  removing low-value tokens and email PII.
-- **Option B: strip the token entirely.** Cleaner text, but can leave dangling
-  punctuation and fragment sentences.
-- **Option C: keep as-is, add a `HasContact`/`HasUrl` review flag only.** Lowest risk,
-  defers the decision, gives near-dedup and any future quality filter a signal.
-
-Recommendation: **Option A** for URLs and emails, because the corpus target is language
-modeling and raw URLs/emails are both noise and PII. Make the sentinels configurable and
-count replacements in the stage report. Whichever option is chosen, add
-`mask_urls`/`mask_emails` booleans to `[clean]` so the behavior is one versioned knob.
-
-### Priority 5 — Segment-level LID for code-switch (finding F)
-
-- **What:** augment the document-level gate in `clean/lid` with a **line/segment-level**
-  pass: run LID per paragraph, and either (a) drop non-Somali segments while keeping the
-  Somali ones, or (b) reject the whole doc when the Somali *character* fraction across
-  segments falls below a threshold (e.g. < 0.6). Option (b) is simpler and lower-risk;
-  option (a) risks fragmenting documents and should be prototyped before adoption.
-- **Also:** stop clipping to the first 2000 bytes for the *decision* on long documents,
-  or sample from multiple offsets, so a clean Somali header cannot mask an English body.
-- **Why:** doc-level winner-take-all is structurally blind to mixed-language documents;
-  the ~0.38% that survive into LID-kept output are exactly these.
-- **Risk:** medium; benchmark against FLORES-200 confusables (already the LID eval basis
-  in `CLEANING_PLAN.md §3`) and require no regression on monolingual Somali recall.
-
-### Priority 6 — Confirm short-doc & mostly-numbers policy (finding H)
-
-No code change proposed; a decision to record:
-
-- Keep the 25-word document floor (it is benchmark-backed).
-- Consider promoting `MostlyNumbers` + `HighSymbolRatio` + a new `HasContact` flag from
-  *review* to *reject* **only** once the deferred seed-based quality filter
-  (`CLEANING_PLAN.md §5`) exists to calibrate the thresholds. Until then, flag-only is
-  correct; document the retained tail in release notes as already planned.
-
-### Priority 7 — Re-audit near-dedup output (finding I)
-
-Once near-dedup finishes, re-run the cross-document boilerplate probe and confirm the
-templated-footer population (contact lines, "share this", navigation) is collapsed.
-If residual near-identical boilerplate remains above ~1%, revisit the τ=0.80 threshold
-or add a boilerplate-line filter upstream.
+52% contain U+2018/U+2019/U+201C/U+201D — mostly valid post-repair. Low priority unless tokenizer analysis shows harm.
 
 ---
 
-## 5. Proposed config additions
+## 5. Proposed v0.2 strategy
 
-New keys under `[clean]` (all default to v0.1 behavior so the change is opt-in and the
-config remains the single source of truth):
+Every step keeps the pipeline contract: stream where possible, route removals to sidecars with reasons, write before/after counts to stage reports.
+
+### 5.1 Pipeline overview
+
+```text
+final_so.jsonl (v0.1)
+    → 4a. Source-aware normalize   (MADLAD/OPUS unescape, extended mojibake)
+    → 4b. Markup & contact clean   (HTML tiering, URL/email mask)
+    → 4c. Boilerplate removal       (line classifier, nav patterns)
+    → 4d. Language purity           (segment-level LID)
+    → 4e. Intra-document dedup      (duplicate paragraphs)
+    → 4f. Quality heuristics v2     (promote review flags → reject)
+    → 4g. Re-near-dedup             (MinHash on changed text)
+    → final_v2_so.jsonl
+```
+
+Optional later (Track B): **4h. Char-n-gram quality filter** (Wikipedia-so seed).
+
+### 5.2 Implementation priorities
+
+| Priority | Item | Owner module | Effort | Est. impact |
+|:--------:|------|--------------|--------|-------------|
+| **P0** | MADLAD literal unescape | `corpus-tools/export.rs` or `clean/normalize` | Low | ~186,000 docs |
+| **P0** | OPUS HTML escape strip | `download_opus_so` or `clean` | Low | ~12,000 docs |
+| **P1** | Extended mojibake (split indicators, extra passes) | `clean/mojibake.rs` | Medium | ~1k–50k |
+| **P1** | Strip stray U+FFFD from kept docs | `clean/strip.rs` | Low | ~0.28% |
+| **P1** | HTML two-tier (reject scaffolding, strip benign tags) | new `clean/html.rs` | Medium | ~3.6k+ |
+| **P1** | Segment-level LID | `lid/stage.rs` | Medium | 100k–300k |
+| **P1** | Boilerplate line removal | new `clean/boilerplate.rs` | Medium | ~75k–150k |
+| **P2** | URL/email mask (`⟨url⟩` / `⟨email⟩`) | new `clean/contact.rs` | Low | ~10–19% union |
+| **P2** | Intra-doc paragraph dedup | new `clean/intra_dedup.rs` | Medium | ~4k–30k |
+| **P2** | Promote review flags → reject | `clean/stage.rs` | Low | ~3k |
+| **P3** | Char-n-gram quality filter | deferred | High | TBD |
+| **P3** | Main-content extraction (trafilatura) | future web sources | High | Track B |
+
+### 5.3 Priority detail (code-anchored)
+
+**P0 — Export / source-aware normalize (findings J, K)**
+
+- MADLAD: unescape `\n`, `\t`, `\"`, `\\/`; re-run whitespace normalize.
+- OPUS: strip trailing `<\/?…>` fragments; decode JSON escapes before clean chain.
+
+**P1 — Extended mojibake (finding A)**
+
+- Pre-pass: rejoin whitespace-split indicators (`Ã ¤` → `Ã¤`, `â€ ™` → `â€™`) when continuation is known.
+- Then existing improve-only CP1252 round-trip (optionally raise max passes to 5).
+- Golden set: extend [`tests/mojibake_golden.rs`](../crates/corpus-pipeline/tests/mojibake_golden.rs) with real survivor lines.
+
+**P1 — Strip stray U+FFFD (finding B)**
+
+- In `clean/strip.rs`, drop isolated U+FFFD **after** mojibake and **after** ratio gate.
+
+**P1 — HTML two-tier policy (finding C)**
+
+- **Tier 1 reject:** `<?php`, `<script>…</script>`, `<style>…</style>`, `<mutation>`, `<char>`.
+- **Tier 2 strip-keep:** benign inline tags; preserve inner text; re-normalize whitespace.
+- Keep `HtmlRemnant` flag on residue after strip.
+
+**P2 — URL/email handling (findings D, E)**
+
+Recommended for pretraining: **mask, don't drop.**
+
+- URLs → `⟨url⟩` sentinel; emails → `⟨email⟩` (PII).
+- Alternatives: strip token (fragments sentences) or flag-only (defer). Record choice in changelog.
+
+**P1 — Segment-level LID (finding F)**
+
+- Per-paragraph LID; reject whole doc if Somali segment fraction < 0.6–0.7 (tune on FLORES-200).
+- **Or** sample LID at head + middle + tail (3 × 1 KB) instead of head-only 2 KB.
+- Option to drop non-Somali segments (higher risk — prototype first).
+- Sentence-class (OPUS, MT560): unchanged tag-only.
+
+**P1 — Boilerplate removal (finding L)**
+
+Line-drop rules (illustrative):
+
+```text
+DROP line if:
+  - all-caps nav run (^[A-Z0-9|«»]{10,}$)
+  - pipe menu (|foo|bar|)
+  - (Written by|Posted by|Tags:|CLICK HERE|CONTACT US|Live Help)
+  - phone-only line
+  - < 4 words and no Somali function word
+```
+
+Reject doc if >40% lines dropped as boilerplate or below length floor.
+
+**P2 — Intra-document dedup (finding I, G-truncation)**
+
+- Remove exact/near-duplicate consecutive paragraphs (Jaccard ≥ 0.95).
+- Flag/reject WordPress `[…]` truncation patterns.
+
+**P2 — Quality heuristics v2**
+
+| Flag | v0.1 | v0.2 proposed |
+|------|------|---------------|
+| `html_remnant` | review | reject if tags remain after strip |
+| `high_symbol_ratio` | review @ >0.5 | reject @ >0.45; review @ >0.35 |
+| `mostly_numbers` | review | reject (document class) |
+| (new) | — | reject if >10,000 words |
+
+**P1 — Re-near-dedup (4g)**
+
+Re-run MinHash + LSH (τ=0.80) on document class after text changes.
+
+### 5.4 Expected outcomes (conservative)
+
+| Metric | v0.1 | Projected v0.2 |
+|--------|-----:|-----------------:|
+| Documents | 1,774,891 | 1.45M – 1.65M |
+| Words | 591M | 520M – 570M |
+| URL noise (full scan) | 18.8% | <2% |
+| Escaped `\n` | 10.5% | ~0% |
+| Foreign EN markers | 13.4% | 3–6% |
+| Boilerplate markers | 4.3% | <1% |
+
+---
+
+## 6. Configuration
+
+Unified v0.2 knobs (opt-in defaults preserving v0.1 behavior):
 
 ```toml
 [clean]
 # v0.2 additions
 strip_benign_html   = true        # Tier-2: remove inline tags, keep inner text
-reject_script_html  = true        # Tier-1: reject <?php/<script>/<style>/<mutation>
+reject_script_html  = true        # Tier-1: reject <?php>/<script>/<style>/<mutation>
 strip_stray_ufffd   = true        # drop lone U+FFFD from kept docs
 mask_urls           = true        # URLs → ⟨url⟩ sentinel
-mask_emails         = true        # emails → ⟨email⟩ sentinel
+mask_emails         = true        # emails → ⟨email⟩ sentinel (PII)
 
 [lid]
 # v0.2 additions
 segment_level        = true       # per-paragraph LID in addition to doc-level
 min_somali_char_frac = 0.6        # reject doc if Somali segment fraction below this
+# Alternative: multi-offset clip instead of segment_level
+
+[deep_clean]
+unescape_madlad = true
+strip_opus_html = true
+mojibake_max_passes = 5
+boilerplate_line_drop = true
+boilerplate_reject_ratio = 0.40
+
+[deep_clean.intra_dedup]
+enabled = true
+paragraph_jaccard_tau = 0.95
+
+[deep_clean.heuristics]
+symbol_ratio_reject = 0.45
+symbol_ratio_review = 0.35
+max_document_words = 10000
 ```
 
 ---
 
-## 6. Validation plan
+## 7. Validation plan
 
-Each v0.2 change ships with before/after evidence, mirroring the existing benchmark
-reports:
-
-1. **Golden tests** for mojibake split-indicators and HTML tiering (real sampled lines,
-   committed under `crates/corpus-pipeline/tests/`).
-2. **Sidecar diffing:** every new removal writes to the reject sidecar with a distinct
-   reason; a reviewer spot-checks 50 sampled rejects per new reason and confirms none
-   are good Somali prose.
-3. **Rate re-measurement:** re-run the §1 probes on v0.2 output and record the new
-   per-document defect rates in a `reports/03_cleaning_audit.md` companion, targeting:
-   mojibake < 0.02%, stray U+FFFD ≈ 0%, script/PHP remnants ≈ 0%, benign-tag residue
-   < 0.1%, code-switch (English-heavy) < 0.2%.
-4. **No-regression checks:** monolingual-Somali LID recall on FLORES-200 must not drop;
-   total kept-document count must not fall more than the sum of the intended reject tiers.
+1. **Golden tests** — mojibake split-indicators, HTML tiering, MADLAD/OPUS unescape ([`crates/corpus-pipeline/tests/`](../crates/corpus-pipeline/tests/)).
+2. **Sidecar diffing** — 50 sampled rejects per new reason; confirm none are good Somali prose.
+3. **Dual re-measurement** — re-run spread-sample probes **and** full-corpus detectors; record in `reports/05_cleaning_audit.md`. Targets: mojibake <0.02%, stray U+FFFD ≈0%, script/PHP ≈0%, code-switch <0.2%.
+4. **LID no-regression** — FLORES-200 Somali recall must not drop.
+5. **Human review** — 20 records/source from `final_v2`; score 1–5 on readability, purity, boilerplate, encoding (target median ≥4.0 kept).
 
 ---
 
-## 7. Open questions
+## 8. Publishing implications (Hugging Face)
 
-1. URL/email policy: mask vs. strip vs. flag (§4.4) — recommended **mask**, needs sign-off.
-2. HTML Tier-1 reject list: is the token set (`<?php`, `<script>`, `<style>`,
-   `<mutation>`, `<char>`) complete, or should it be data-driven from the full
-   `HtmlRemnant` sidecar rather than the sample?
-3. Segment-level LID: drop-segment vs. reject-document — prototype both, measure text
-   fragmentation before committing.
-4. Whether to promote `MostlyNumbers`/`HighSymbolRatio` to reject before the seed-based
-   quality filter lands, or hold until it can calibrate thresholds.
+Do **not** publish `final_so.jsonl` as-is for a pretraining-focused release.
+
+| Release | Contents | When |
+|---------|----------|------|
+| v0.1-preview | Dataset card + 10K sample + pipeline recipe | Optional now |
+| **v0.2-clean** | Full `final_v2_so.jsonl` after deep clean | After §5 implemented |
+| splits | train 99% / val 1% stratified by source | At publish |
+
+Document: v0.1 vs v0.2 differences, residual noise estimates, per-source licenses ([SOURCES.md](SOURCES.md)), reproduction commands.
+
+Target repo: `goobolabs/SomNLP-Corpus`.
+
+---
+
+## 9. Concrete examples (from final corpus)
+
+**Swedish + English in Somali news (passes LID):**
+```text
+Ninka Fadeexada badan ee Erik Almqvist oo xukuma warbaahinta SD - Radio Sweden Somali ...
+La daabacay måndag 16 februari 2015 kl 12.30
+```
+
+**Product spec spam (HPLT):**
+```text
+Tags:
+Black ama Silver? The Miisaanka Digital Jikada Cuntada Pro Ozeri looks the part, laakiin ...
+- Range: 1g – 5000g
+```
+
+**Double-encoded mojibake (CC100):**
+```text
+... suÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢aalaha la weydiinaayeyna ay ku saabsanaayeen habka ku qanacsanaanta guurka ...
+```
+
+**WordPress truncation (CC100):**
+```text
+... Sidoo […] Madaxda Wasaaradda ... […] Wasiirka Cusub ee Was ...
+```
+
+**Navigation chrome (mC4):**
+```text
+HOMEGABAYODUCOOYINQURAAN... CONTACT US
+Live Help/Live Chat
+Radio Saajid 682-710-3731 »
+```
+
+---
+
+## 10. Open questions
+
+1. URL/email: mask vs strip vs flag — **recommended mask**; needs sign-off.
+2. HTML Tier-1 reject token list — complete, or data-driven from full `HtmlRemnant` sidecar?
+3. Segment LID: drop-segment vs reject-document — prototype both.
+4. Promote `MostlyNumbers`/`HighSymbolRatio` to reject before char-n-gram filter, or hold?
+5. Smart quotes: keep Unicode or NFKC to ASCII for tokenizer efficiency?
+
+---
+
+## 11. Next steps
+
+1. Review and lock priority order / rejection aggressiveness.
+2. Implement **P0** in `corpus-tools` (MADLAD unescape, OPUS strip).
+3. Implement v0.2 clean stages in `corpus-pipeline` (`deep_clean` binary or extended `clean_corpus`).
+4. Re-run on `data/final/final_so.jsonl` → `data/final_v2/final_v2_so.jsonl`.
+5. Re-near-dedup (4g).
+6. Dual audit re-measurement; compare to §3.1 tables.
+7. Publish v0.2 to Hugging Face.
+
+---
+
+## Appendix A — Full-corpus detector summary (2026-07-07)
+
+| Detector | Count | % |
+|----------|------:|--:|
+| smart_quote_artifact | 927,328 | 52.25% |
+| url | 333,566 | 18.79% |
+| foreign_en | 236,967 | 13.35% |
+| escaped | 186,083 | 10.48% |
+| boilerplate | 77,113 | 4.34% |
+| pipe_nav | 59,154 | 3.33% |
+| ellipsis_trunc | 31,914 | 1.80% |
+| wordpress | 18,239 | 1.03% |
+| arabic | 17,498 | 0.99% |
+| dup_sentence | 3,843 | 0.22% |
+| html_tag | 3,602 | 0.20% |
+| mojibake | 1,284 | 0.07% |
+| nbsp_artifact | 711 | 0.04% |
+| php_code | 350 | 0.02% |
+
+## Appendix B — Per-source issue rates (full scan)
+
+| Source | escaped | url | foreign_en | boilerplate | pipe_nav |
+|--------|--------:|----:|-----------:|------------:|---------:|
+| hplt | 0.0% | 22.2% | 12.9% | 3.3% | 0.8% |
+| mc4 | 0.0% | 24.8% | 20.5% | 7.8% | 7.0% |
+| madlad | **99.98%** | 16.6% | 15.1% | 5.0% | 3.8% |
+| cc100 | 0.0% | 4.8% | 1.5% | 0.0% | — |
+| mt560 | ~0% | ~0% | ~0% | — | — |
+| opus | 0.07% | 0.9% | 0.8% | — | — |
+
+## Appendix C — References
+
+- Phase 3 spec: [CLEANING_PLAN.md](CLEANING_PLAN.md)
+- Pipeline commands: [DATA_PIPELINE.md](DATA_PIPELINE.md)
+- LID benchmark: `reports/lid_benchmark.md`
+- Min-word benchmark: `reports/min_word_threshold_benchmark.md`
+- Stage stats: `reports/01_merge_stats.md` … `reports/04_near_dedup_stats.md`
