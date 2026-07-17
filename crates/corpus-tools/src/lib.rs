@@ -10,5 +10,6 @@ pub mod normalize;
 pub mod parquet_source;
 pub mod quran;
 pub mod stats;
+pub mod wikipedia;
 
 pub use stats::Stats;
