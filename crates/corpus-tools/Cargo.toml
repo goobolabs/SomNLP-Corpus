@@ -42,6 +42,10 @@ path = "src/bin/download_quran_so.rs"
 name = "merge_corpora"
 path = "src/bin/merge_corpora.rs"
 
+[[bin]]
+name = "download_wikipedia_so"
+path = "src/bin/download_wikipedia_so.rs"
+
 [dependencies]
 common = { path = "../common" }
 anyhow = { workspace = true }
