@@ -11,5 +11,6 @@ pub mod parquet_source;
 pub mod quran;
 pub mod stats;
 pub mod wikipedia;
+pub mod xlsum;
 
 pub use stats::Stats;

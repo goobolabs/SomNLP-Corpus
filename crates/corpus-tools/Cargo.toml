@@ -46,6 +46,10 @@ path = "src/bin/merge_corpora.rs"
 name = "download_wikipedia_so"
 path = "src/bin/download_wikipedia_so.rs"
 
+[[bin]]
+name = "download_xlsum_so"
+path = "src/bin/download_xlsum_so.rs"
+
 [dependencies]
 common = { path = "../common" }
 anyhow = { workspace = true }
