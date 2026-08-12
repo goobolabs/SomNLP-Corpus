@@ -50,6 +50,10 @@ path = "src/bin/download_wikipedia_so.rs"
 name = "download_xlsum_so"
 path = "src/bin/download_xlsum_so.rs"
 
+[[bin]]
+name = "xlsum_so"
+path = "src/bin/xlsum_so.rs"
+
 [dependencies]
 common = { path = "../common" }
 anyhow = { workspace = true }
@@ -69,4 +73,5 @@ serde_json = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
+unicode-normalization = { workspace = true }
 xz2 = { workspace = true }

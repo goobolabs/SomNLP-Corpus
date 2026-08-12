@@ -1,4 +1,4 @@
-//! XL-Sum Somali (`csebuetnlp/xlsum`) downloader.
+//! Stage 1 — fetch the Somali XL-Sum parquet shards from the Hub.
 //!
 //! The repo still ships a (now unsupported) dataset *script*, so the config is
 //! not loadable by name. The Hub auto-converts such datasets to parquet on
@@ -13,23 +13,16 @@ use tempfile::NamedTempFile;
 use crate::hf::{HfClient, PARQUET_REVISION};
 use crate::jsonl::{is_non_empty, JsonlWriter};
 use crate::parquet_source::iter_text_column;
+use crate::xlsum::config::{
+    source_url, Layout, DATASET_CONFIG, DATASET_NAME, FIELDS, SOURCE_TAG, SPLITS,
+};
 
-pub const SOURCE_TAG: &str = "xlsum";
-pub const DATASET_NAME: &str = "csebuetnlp/xlsum";
-pub const DATASET_CONFIG: &str = "somali";
-
-/// Splits published for the Somali configuration.
-pub const SPLITS: [&str; 3] = ["train", "validation", "test"];
-
-/// Parquet columns that hold text worth exporting.
-pub const FIELDS: [&str; 3] = ["text", "summary", "title"];
-
-/// Human-readable provenance line for the export summary.
-pub fn source_url() -> String {
-    format!(
-        "https://huggingface.co/datasets/{DATASET_NAME} (config: {DATASET_CONFIG}, \
-         revision: {PARQUET_REVISION})"
-    )
+/// A parquet shard on disk, tagged with the split it belongs to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Shard {
+    pub split: String,
+    pub remote_path: String,
+    pub local_path: PathBuf,
 }
 
 /// Download the requested Somali XL-Sum splits and export one JSONL record per
@@ -37,6 +30,7 @@ pub fn source_url() -> String {
 ///
 /// No cleaning happens here: like every other downloader in this crate, the
 /// output is raw source text and normalization is the corpus-pipeline's job.
+/// For the cleaned, multi-format corpus see [`crate::xlsum::pipeline`].
 pub fn download_xlsum(
     output: &Path,
     field: &str,
@@ -45,7 +39,10 @@ pub fn download_xlsum(
     streaming: bool,
 ) -> Result<crate::Stats> {
     if !FIELDS.contains(&field) {
-        bail!("unknown field '{field}'; expected one of {}", FIELDS.join(", "));
+        bail!(
+            "unknown field '{field}'; expected one of {}",
+            FIELDS.join(", ")
+        );
     }
 
     let hf = HfClient::new();
@@ -56,7 +53,7 @@ pub fn download_xlsum(
     let mut written = 0u64;
     let mut temps: Vec<NamedTempFile> = Vec::new();
 
-    for remote_path in &shards {
+    for (_, remote_path) in &shards {
         if limit.is_some_and(|limit| written >= limit) {
             break;
         }
@@ -92,13 +89,48 @@ pub fn download_xlsum(
     Ok(stats)
 }
 
+/// Materialize every requested split's shards under `layout.raw_dir()`.
+///
+/// Shards already on disk are reused unless `force` is set, so re-running the
+/// staged pipeline does not re-download the dataset.
+pub fn fetch_shards(layout: &Layout, splits: &[String], force: bool) -> Result<Vec<Shard>> {
+    layout.ensure_dirs()?;
+
+    let hf = HfClient::new();
+    let listed = hf.list_files_at(DATASET_NAME, PARQUET_REVISION, DATASET_CONFIG, true)?;
+    let selected = select_shards(&listed, splits)?;
+
+    let raw_dir = layout.raw_dir();
+    let mut shards = Vec::with_capacity(selected.len());
+
+    for (split, remote_path) in selected {
+        let local_path = raw_dir.join(local_shard_name(&remote_path));
+        if local_path.exists() && !force {
+            println!("  {split:<11} cached  {}", local_path.display());
+        } else {
+            println!("  {split:<11} -> {remote_path}");
+            hf.download_to_path_at(DATASET_NAME, PARQUET_REVISION, &remote_path, &local_path)?;
+        }
+        shards.push(Shard {
+            split,
+            remote_path,
+            local_path,
+        });
+    }
+
+    Ok(shards)
+}
+
 /// Pick the parquet shards belonging to `splits`, in the order requested.
 ///
 /// Errors when a requested split has no shards, so a renamed split upstream
 /// fails loudly instead of silently exporting a short corpus.
-fn select_shards(listed: &[String], splits: &[String]) -> Result<Vec<String>> {
+fn select_shards(listed: &[String], splits: &[String]) -> Result<Vec<(String, String)>> {
     if splits.is_empty() {
-        bail!("no splits requested; expected one or more of {}", SPLITS.join(", "));
+        bail!(
+            "no splits requested; expected one or more of {}",
+            SPLITS.join(", ")
+        );
     }
 
     let mut shards = Vec::new();
@@ -113,7 +145,7 @@ fn select_shards(listed: &[String], splits: &[String]) -> Result<Vec<String>> {
             bail!("no parquet shards found for split '{split}' under {DATASET_CONFIG}/");
         }
         matched.sort();
-        shards.append(&mut matched);
+        shards.extend(matched.into_iter().map(|path| (split.clone(), path)));
     }
     Ok(shards)
 }
@@ -164,13 +196,23 @@ mod tests {
         names.iter().map(|name| name.to_string()).collect()
     }
 
+    fn paths(shards: &[(String, String)]) -> Vec<&str> {
+        shards.iter().map(|(_, path)| path.as_str()).collect()
+    }
+
     #[test]
     fn selects_shards_in_requested_order() {
         let shards = select_shards(&listing(), &splits(&["train", "test"])).unwrap();
         assert_eq!(
-            shards,
+            paths(&shards),
             vec!["somali/train/0000.parquet", "somali/test/0000.parquet"]
         );
+    }
+
+    #[test]
+    fn tags_each_shard_with_its_split() {
+        let shards = select_shards(&listing(), &splits(&["validation"])).unwrap();
+        assert_eq!(shards[0].0, "validation");
     }
 
     #[test]

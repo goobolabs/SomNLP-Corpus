@@ -20,6 +20,7 @@ See also: [METADATA_SCHEMA.md](METADATA_SCHEMA.md), [PLAN.md](../PLAN.md).
 | `opus` | OPUS ParaCrawl `en-so` | parallel text | A | parallel sentences | CC0-1.0 | `download_opus_so` | done | Somali column from `translation.so` |
 | `mt560` | MT560 en–so pairs | parallel / religious | A | ~161K pairs | CC-BY-4.0 | `download_mt560_so` | done | Writes `source: mt560` tag in raw JSONL |
 | `quran` | QuranEnc Somali (Yacob Yusuf) | religious | A | ~6.2K verses + footnotes | see source | `download_quran_so` | done | Two outputs: verse translations and footnote explanations |
+| `xlsum` | XL-Sum `somali` (BBC Somali) | news / summarization | A | ~7.5K articles, ~2.9M words | CC-BY-NC-SA-4.0 | `download_xlsum_so`, `xlsum_so` | done | Non-commercial license — keep separable from the redistributable corpus |
 
 ### Track A licensing note
 
@@ -105,6 +106,24 @@ from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 - **Output:** `data/raw/quran/translation.json` (verse text) and `data/raw/quran/footnotes.json` (footnote explanations)
 - **Cleaning:** strips leading verse numbers and inline footnote markers from translations; strips leading `[n].` markers from footnotes; empty footnotes dropped
 - **License:** see upstream QuranEnc terms (verify before release)
+
+### `xlsum`
+
+- **Upstream:** [csebuetnlp/xlsum](https://huggingface.co/datasets/csebuetnlp/xlsum) config `somali` (BBC Somali articles)
+- **Access:** the repo still ships a dataset *script*, so the Hub's auto-converted
+  parquet branch `refs/convert/parquet` is read instead — one `0000.parquet` per
+  split, columns `id` / `url` / `title` / `summary` / `text`
+- **Splits:** `train` (5,962) · `validation` (745) · `test` (745)
+- **Output:** `data/raw/xlsum/xlsum_so.jsonl` (`download_xlsum_so`, raw single field)
+- **Staged toolkit:** `xlsum_so` writes `raw/` shards, `extracted.jsonl`,
+  `corpus.{jsonl,csv,txt}` and `reports/{schema,metadata_report}.json` under
+  `--root` (default `data/raw/xlsum/`)
+- **Cleaning (`xlsum_so` only):** NFC, control/zero-width/bidi removal, whitespace
+  collapse; drops records that are too short, untitled, summary-less, or
+  mojibake-corrupted (>2% U+FFFD). Somali letters, glottal-stop apostrophes and
+  diacritics are preserved
+- **License:** CC-BY-NC-SA-4.0 — **non-commercial**; verify before including in a
+  redistributed corpus build
 
 ---
 

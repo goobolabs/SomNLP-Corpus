@@ -7,12 +7,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **XL-Sum Somali staged toolkit** (`crates/corpus-tools/src/xlsum/`, binary `xlsum_so`) —
+  download → inspect → extract → clean → export → stats, ported from the Python
+  `xlsum_somali` package; writes `extracted.jsonl`, `corpus.{jsonl,csv,txt}` and
+  `reports/{schema,metadata_report}.json` under one root
+- Somali-safe cleaner (NFC, control/zero-width/bidi stripping, whitespace collapse,
+  mojibake and length gates) preserving letters, glottal stops and diacritics
+- `parquet_source::iter_string_rows` / `row_count` / `column_types` for multi-column
+  and footer-only parquet reads
 - **Somali BPE tokenizer pipeline** (`tokenizer/`) — prepare, train, and benchmark scripts
   using Hugging Face `tokenizers` on the final release corpus
 - Trained **32k vocabulary** model: `tokenizer/somali-bpe-tokenizer.json`
 - Full-corpus benchmark: mean **1.53** tokens/word (native) vs **2.69** (BERT-base) vs
   **1.94** (XLM-RoBERTa) on 1,668,080 documents
 - Technical note: [tokenizer/PAPER.md](tokenizer/PAPER.md)
+
+### Fixed
+
+- `download_wikipedia` took `Option<usize>` while its binary passed `Option<u64>`,
+  which failed to compile the whole crate
 
 ### Planned
 

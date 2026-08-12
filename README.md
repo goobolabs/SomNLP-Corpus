@@ -164,9 +164,30 @@ cargo build --release
 ./target/release/download_madlad_so
 ./target/release/download_mt560_so
 ./target/release/download_quran_so
+./target/release/download_wikipedia_so
+./target/release/download_xlsum_so
 
 ./target/release/run_pipeline --config configs/pipeline.toml
 ```
+
+### XL-Sum staged toolkit
+
+`download_xlsum_so` writes raw single-field JSONL like every other downloader.
+`xlsum_so` runs the source's own six-stage toolkit instead — download → inspect →
+extract → clean → export → stats — producing a cleaned corpus in JSONL/CSV/plain
+text plus schema and metadata reports under one root:
+
+```bash
+./target/release/xlsum_so all                       # every stage
+./target/release/xlsum_so all --splits train --limit 100
+./target/release/xlsum_so extract --splits train validation
+./target/release/xlsum_so clean --min-text-chars 40
+./target/release/xlsum_so export --formats jsonl txt
+./target/release/xlsum_so stats --tokens-per-word 1.53
+```
+
+Artifacts land under `--root` (default `data/raw/xlsum/`): `raw/` shards,
+`extracted.jsonl`, `corpus.{jsonl,csv,txt}`, and `reports/`.
 
 Some Hugging Face datasets need authentication:
 
@@ -204,6 +225,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 | `download_madlad_so` | [MADLAD-400](https://huggingface.co/datasets/allenai/MADLAD-400) (`so`) | ODC-BY |
 | `download_mt560_so` | [MT560 en–so pairs](https://huggingface.co/datasets/michsethowusu/english-somali_sentence-pairs_mt560) | CC-BY-4.0 |
 | `download_quran_so` | [QuranEnc Somali (Yacob Yusuf)](https://quranenc.com/api/v1/translation/sura/somali_yacob/1) | see source |
+| `download_wikipedia_so` | [wikimedia/wikipedia](https://huggingface.co/datasets/wikimedia/wikipedia) (`20231101.so`) | CC-BY-SA-4.0 |
+| `download_xlsum_so` / `xlsum_so` | [csebuetnlp/xlsum](https://huggingface.co/datasets/csebuetnlp/xlsum) (`somali`) | CC-BY-NC-SA-4.0 |
 
 Scale estimates, overlap, and per-record licensing: [docs/SOURCES.md](docs/SOURCES.md).
 
