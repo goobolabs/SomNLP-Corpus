@@ -11,7 +11,9 @@ repository = "https://github.com/dugsiiye-labs/SomNLP-Corpus"
 [workspace.dependencies]
 # Serialization
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# `float_roundtrip` so statistics written to the audit reports parse back
+# bit-for-bit; the default parser is best-effort and drifts by an ULP.
+serde_json = { version = "1", features = ["float_roundtrip"] }
 toml = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
 

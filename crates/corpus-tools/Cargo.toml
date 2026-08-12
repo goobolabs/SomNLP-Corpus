@@ -39,6 +39,10 @@ name = "download_quran_so"
 path = "src/bin/download_quran_so.rs"
 
 [[bin]]
+name = "download_nllb_so"
+path = "src/bin/download_nllb_so.rs"
+
+[[bin]]
 name = "merge_corpora"
 path = "src/bin/merge_corpora.rs"
 
@@ -60,12 +64,15 @@ anyhow = { workspace = true }
 arrow = { workspace = true }
 arrow-array = { workspace = true }
 arrow-schema = { workspace = true }
+blake2 = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true }
 flate2 = { workspace = true }
 futures = { workspace = true }
 indicatif = { workspace = true }
 parquet = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
 regex = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true }
