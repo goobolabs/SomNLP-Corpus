@@ -10,7 +10,7 @@ pub const DATASET_NAME: &str = "wikimedia/wikipedia";
 pub const DATASET_CONFIG: &str = "20231101.so";
 
 /// Downloads the Somali Wikipedia subset from Hugging Face and exports it as JSONL.
-pub fn download_wikipedia(output: &Path, limit: Option<usize>, stream: bool) -> Result<()> {
+pub fn download_wikipedia(output: &Path, limit: Option<u64>, stream: bool) -> Result<()> {
     let hf = HfClient::new();
     let shards = filter_paths(hf.list_files(DATASET_NAME, DATASET_CONFIG)?, ".parquet");
 

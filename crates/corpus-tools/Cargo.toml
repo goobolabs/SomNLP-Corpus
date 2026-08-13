@@ -51,6 +51,10 @@ name = "download_xlsum_so"
 path = "src/bin/download_xlsum_so.rs"
 
 [[bin]]
+name = "download_quran_tanzil"
+path = "src/bin/download_quran_tanzil.rs"
+
+[[bin]]
 name = "download_nllb_so"
 path = "src/bin/download_nllb_so.rs"
 
