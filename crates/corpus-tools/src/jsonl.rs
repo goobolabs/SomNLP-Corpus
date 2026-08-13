@@ -135,6 +135,25 @@ pub fn is_non_empty(text: &str) -> bool {
     !text.trim().is_empty()
 }
 
+/// Write each non-empty text as one `{"text": ...}` record, stopping at `limit`.
+pub fn write_texts(output: &Path, texts: &[String], limit: Option<u64>) -> Result<Stats> {
+    let mut writer = JsonlWriter::create(output, "Writing")?;
+    let mut written = 0u64;
+    for text in texts {
+        if limit.is_some_and(|limit| written >= limit) {
+            break;
+        }
+        if !is_non_empty(text) {
+            continue;
+        }
+        writer.write_text(text)?;
+        written += 1;
+    }
+    let stats = writer.stats.clone();
+    writer.finish();
+    Ok(stats)
+}
+
 pub fn read_jsonl_texts(path: &Path) -> Result<impl Iterator<Item = Result<String>> + '_> {
     use std::io::{BufRead, BufReader};
 
