@@ -10,6 +10,7 @@ pub mod normalize;
 pub mod parquet_source;
 pub mod quran;
 pub mod stats;
+pub mod tanzil;
 pub mod wikipedia;
 pub mod xlsum;
 

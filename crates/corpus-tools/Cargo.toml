@@ -50,6 +50,10 @@ path = "src/bin/download_wikipedia_so.rs"
 name = "download_xlsum_so"
 path = "src/bin/download_xlsum_so.rs"
 
+[[bin]]
+name = "download_quran_tanzil"
+path = "src/bin/download_quran_tanzil.rs"
+
 [dependencies]
 common = { path = "../common" }
 anyhow = { workspace = true }
