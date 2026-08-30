@@ -20,6 +20,10 @@ See also: [METADATA_SCHEMA.md](METADATA_SCHEMA.md), [PLAN.md](../PLAN.md).
 | `opus` | OPUS ParaCrawl `en-so` | parallel text | A | parallel sentences | CC0-1.0 | `download_opus_so` | done | Somali column from `translation.so` |
 | `mt560` | MT560 en–so pairs | parallel / religious | A | ~161K pairs | CC-BY-4.0 | `download_mt560_so` | done | Writes `source: mt560` tag in raw JSONL |
 | `quran` | QuranEnc Somali (Yacob Yusuf) | religious | A | ~6.2K verses + footnotes | see source | `download_quran_so` | done | Two outputs: verse translations and footnote explanations |
+| `wikipedia` | Somali Wikipedia | encyclopedia | A | ~1–3M tokens | CC-BY-SA-4.0 | `download_wikipedia_so` | done | HF `wikimedia/wikipedia` dataset (`20231101.so`) |
+| `xlsum` | XL-Sum Somali | news / summary | A | ~15K articles | CC-BY-4.0 | `download_xlsum_so` | done | `csebuetnlp/xlsum` (`somali` config) |
+| `nllb` | NLLB English–Somali | parallel text | A | ~1.5M pairs | ODC-BY | `download_nllb_so` | done | Official Meta/AllenAI NLLB TSV export |
+| `tanzil` | Tanzil Qur'an Somali (Abduh) | religious | A | ~6.2K verses | see source | `download_quran_tanzil` | done | Mahmud Muhammad Abduh translation from Tanzil.net |
 
 ### Track A licensing note
 
@@ -44,7 +48,6 @@ from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 | Key | Name | Category | Track | Est. scale | License | Tool | Status | Notes |
 |-----|------|----------|:-----:|------------|---------|------|--------|-------|
 | `web` | Somali web scraping | news / blogs / gov | B | ~40M words | per-site | collector (planned) | planned | ~100 sites; robots.txt required |
-| `wikipedia` | Somali Wikipedia | encyclopedia | B | ~1–3M tokens | CC-BY-SA-4.0 | collector (planned) | planned | Pilot quality anchor |
 | `wikimedia` | Wiktionary / Wikiquote / Wikinews | reference | B | small | CC-BY-SA-4.0 | collector (planned) | planned | Supplement to Wikipedia |
 | `books` | Books & educational materials | literature / education | B | 10–20M tokens | per-work | collector (planned) | planned | Public domain or author-approved |
 | `social` | Social media & forums | informal | B | 5–15M tokens | per-platform | collector (planned) | planned | Heavy cleaning required |
@@ -105,6 +108,34 @@ from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 - **Output:** `data/raw/quran/translation.json` (verse text) and `data/raw/quran/footnotes.json` (footnote explanations)
 - **Cleaning:** strips leading verse numbers and inline footnote markers from translations; strips leading `[n].` markers from footnotes; empty footnotes dropped
 - **License:** see upstream QuranEnc terms (verify before release)
+
+### `wikipedia`
+
+- **Upstream:** [wikimedia/wikipedia](https://huggingface.co/datasets/wikimedia/wikipedia) config `20231101.so`
+- **Access:** Hugging Face parquet shards
+- **Output:** `data/raw/wikipedia/wikipedia_so.jsonl`
+- **License:** CC-BY-SA-4.0
+
+### `xlsum`
+
+- **Upstream:** [csebuetnlp/xlsum](https://huggingface.co/datasets/csebuetnlp/xlsum) config `somali`
+- **Access:** Hugging Face parquet auto-converted revision (`PARQUET_REVISION`)
+- **Output:** `data/raw/xlsum/xlsum_so.jsonl`
+- **License:** CC-BY-4.0
+
+### `nllb`
+
+- **Upstream:** [allenai/nllb](https://storage.googleapis.com/allennlp-data-bucket/nllb/eng_Latn-som_Latn.gz)
+- **Access:** Direct Google Cloud Storage bucket gzip stream
+- **Output:** `data/raw/nllb/nllb_so.jsonl`
+- **License:** ODC-BY
+
+### `tanzil`
+
+- **Upstream:** [Tanzil.net](https://tanzil.net/trans/?transID=so.abduh&type=txt-2&agree=true) (Mahmud Muhammad Abduh translation)
+- **Access:** Direct HTTP TXT download; 6,236 ayahs parsed
+- **Output:** `data/raw/quran-tanzil/translation.json`
+- **License:** see upstream Tanzil.net terms
 
 ---
 

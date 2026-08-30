@@ -102,6 +102,41 @@ pub const SOURCES: &[SourceEntry] = &[
         near_dedup: false,
         license_id: "Other",
     },
+    SourceEntry {
+        key: "wikipedia",
+        class: SourceClass::Document,
+        lid_policy: LidPolicy::Gate,
+        near_dedup: true,
+        license_id: "CC-BY-SA-4.0",
+    },
+    SourceEntry {
+        key: "xlsum",
+        class: SourceClass::Document,
+        lid_policy: LidPolicy::Gate,
+        near_dedup: true,
+        license_id: "CC-BY-4.0",
+    },
+    SourceEntry {
+        key: "nllb",
+        class: SourceClass::Sentence,
+        lid_policy: LidPolicy::TagOnly,
+        near_dedup: false,
+        license_id: "ODC-BY",
+    },
+    SourceEntry {
+        key: "tanzil",
+        class: SourceClass::Sentence,
+        lid_policy: LidPolicy::TagOnly,
+        near_dedup: false,
+        license_id: "Other",
+    },
+    SourceEntry {
+        key: "quran-tanzil",
+        class: SourceClass::Sentence,
+        lid_policy: LidPolicy::TagOnly,
+        near_dedup: false,
+        license_id: "Other",
+    },
 ];
 
 /// Look up a source entry by its registry key.
@@ -115,7 +150,20 @@ mod tests {
 
     #[test]
     fn all_track_a_keys_present() {
-        for key in ["hplt", "cc100", "mc4", "madlad", "opus", "mt560"] {
+        for key in [
+            "hplt",
+            "cc100",
+            "mc4",
+            "madlad",
+            "opus",
+            "mt560",
+            "quran",
+            "wikipedia",
+            "xlsum",
+            "nllb",
+            "tanzil",
+            "quran-tanzil",
+        ] {
             assert!(lookup(key).is_some(), "missing source: {key}");
         }
     }

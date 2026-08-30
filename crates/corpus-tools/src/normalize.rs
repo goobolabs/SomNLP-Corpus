@@ -34,7 +34,7 @@ pub fn strip_opus_html_fragments(text: &str) -> String {
         let lower = current.to_lowercase();
         let stripped = if lower.ends_with("\\/p>") || lower.ends_with("\\/div>") {
             current
-                .trim_end_matches(|c: char| c == '>' || c == '/' || c == '\\' || c.is_alphabetic())
+                .trim_end_matches(|c: char| c == '>' || c == '<' || c == '/' || c == '\\' || c.is_alphabetic())
                 .trim()
                 .to_string()
         } else if let Some(idx) = current.rfind('<') {
