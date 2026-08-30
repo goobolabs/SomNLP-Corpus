@@ -39,13 +39,17 @@ MT560 records include a source tag:
 ### Downloaders
 
 ```bash
-./target/release/download_hplt_so   [--limit N] [--no-stream]
-./target/release/download_cc100_so  [--limit N] [--no-stream]
-./target/release/download_mc4_so    [--limit N] [--no-stream]
-./target/release/download_opus_so   [--limit N] [--no-stream]
-./target/release/download_madlad_so [--limit N] [--include-noisy]
-./target/release/download_mt560_so  [--limit N]
-./target/release/download_quran_so  [--limit N] [--concurrency N]
+./target/release/download_hplt_so         [--limit N] [--no-stream]
+./target/release/download_cc100_so        [--limit N] [--no-stream]
+./target/release/download_mc4_so          [--limit N] [--no-stream]
+./target/release/download_opus_so         [--limit N] [--no-stream]
+./target/release/download_madlad_so       [--limit N] [--include-noisy]
+./target/release/download_mt560_so        [--limit N]
+./target/release/download_quran_so        [--limit N] [--concurrency N]
+./target/release/download_wikipedia_so    [--limit N] [--no-stream]
+./target/release/download_xlsum_so        [--limit N] [--field F] [--splits S...]
+./target/release/download_nllb_so         [--limit N] [--min-laser L] [--min-som-lid S]
+./target/release/download_quran_tanzil    [--limit N] [--footnotes-output P]
 ```
 
 | Flag | Description |
@@ -64,7 +68,13 @@ Default outputs:
 | OPUS | `data/raw/opus/opus_so.jsonl` |
 | MADLAD | `data/raw/madlad/madlad_so.jsonl` |
 | MT560 | `data/raw/mt560/mt560_so.jsonl` |
-| Qur'an | `data/raw/quran/translation.json` + `data/raw/quran/footnotes.json` |
+| Qur'an (QuranEnc) | `data/raw/quran/translation.json` + `data/raw/quran/footnotes.json` |
+| Wikipedia | `data/raw/wikipedia/wikipedia_so.jsonl` |
+| XL-Sum | `data/raw/xlsum/xlsum_so.jsonl` |
+| NLLB | `data/raw/nllb/nllb_so.jsonl` |
+| Qur'an (Tanzil) | `data/raw/quran-tanzil/translation.json` |
+
+Recommended download order: HPLT → CC100 → mC4 → OPUS → MADLAD → MT560 → Wikipedia → XLSum → NLLB → Tanzil.
 
 Recommended download order: HPLT → CC100 → mC4 → OPUS → MADLAD → MT560.
 

@@ -24,23 +24,22 @@
 
 ## Status
 
-| Phase | Scope | Status |
-|-------|-------|--------|
-| 1 — Foundation | Workspace, shared types | ✅ Done |
-| 2 — Public datasets | Six downloaders + merge | ✅ Done |
-| 3 — Processing pipeline | Clean → LID → deep clean → near-dedup | ✅ Done |
-| 4 — Collection | Wikipedia, web scraping | 🔜 Next |
-| 5 — Release | Hugging Face packaging | Planned |
+| Phase                   | Scope                                 | Status  |
+| ----------------------- | ------------------------------------- | ------- |
+| 1 — Foundation          | Workspace, shared types               | ✅ Done  |
+| 2 — Public datasets     | Eleven downloaders + merge            | ✅ Done  |
+| 3 — Processing pipeline | Clean → LID → deep clean → near-dedup | ✅ Done  |
+| 4 — Collection          | Web scraping & targeted sources       | 🔜 Next  |
+| 5 — Release             | Hugging Face packaging                | Planned |
 
-**Track A is live:** download six public Somali datasets, merge, clean, verify language,
-and deduplicate into a training-ready corpus. **Track B next:** Wikipedia and targeted
-Somali web collection.
+**Track A is live:** download eleven public Somali datasets, merge, clean, verify language,
+and deduplicate into a training-ready corpus. **Track B next:** targeted Somali web collection.
 
 See [ROADMAP.md](ROADMAP.md) and [PLAN.md](PLAN.md).
 
 ## What we built
 
-- **Six downloaders** — HPLT, CC100, mC4, OPUS, MADLAD, MT560
+- **Eleven downloaders** — HPLT, CC100, mC4, OPUS, MADLAD, MT560, QuranEnc, Wikipedia, XL-Sum, NLLB, Tanzil
 - **Five processing stages** — merge + exact dedup, clean, LID (`lingua`), deep clean (v0.2), near-dedup (MinHash + LSH)
 - **`CorpusRecord` metadata** — provenance, content hash, dedup info, quality flags on every kept line
 - **Reject sidecars** — full text + reason for every dropped record; inspect with `reports/inspect_drops.sh`
@@ -59,14 +58,14 @@ word/token figures use the final corpus average (~317 words/doc) and are marked 
 v0.1 baseline (without deep clean): 1.77M docs · 591M words — see
 [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md).
 
-| Stage | Documents | Words | Tokens | Removed this stage |
-|-------|----------:|------:|--------------:|-------------------:|
-| Downloaded (raw) | 2,633,281 | ~835M | ~1.25B | — |
-| Merged | 2,329,800 | ~738M | ~1.11B | 303,481 |
-| Cleaned | 2,225,791 | ~706M | ~1.06B | 104,009 |
-| LID verified | 2,035,287 | ~645M | ~968M | 190,504 |
-| Deep cleaned | 2,003,228 | ~635M | ~952M | 32,059 |
-| **Final** | **1,668,080** | **528,853,952** | **~810M** | 335,148 |
+| Stage            |     Documents |           Words |    Tokens | Removed this stage |
+| ---------------- | ------------: | --------------: | --------: | -----------------: |
+| Downloaded (raw) |     2,633,281 |           ~835M |    ~1.25B |                  — |
+| Merged           |     2,329,800 |           ~738M |    ~1.11B |            303,481 |
+| Cleaned          |     2,225,791 |           ~706M |    ~1.06B |            104,009 |
+| LID verified     |     2,035,287 |           ~645M |     ~968M |            190,504 |
+| Deep cleaned     |     2,003,228 |           ~635M |     ~952M |             32,059 |
+| **Final**        | **1,668,080** | **528,853,952** | **~810M** |            335,148 |
 
 **Overall:** 2.63M raw rows → **1.67M clean documents** · **529M words** · **~810M subword tokens**
 (native 32k BPE, mean 1.53 tokens/word — see [tokenizer/](tokenizer/)). Output:
@@ -74,13 +73,13 @@ v0.1 baseline (without deep clean): 1.77M docs · 591M words — see
 
 ### What cleaning removed
 
-| Stage | Removed | Share of stage input | Main reason |
-|-------|--------:|---------------------:|-------------|
-| Merge | 303,481 | 11.5% | Exact duplicates (MT560 ~68% within-source) |
-| Clean | 104,009 | 4.5% | Too short (&lt;25 words docs / &lt;5 words sentences) or corrupted |
-| LID | 190,504 | 8.6% | Non-Somali on document-class sources (mC4 highest rate) |
-| Deep clean | 32,059 | 1.6% | Boilerplate (23,948), segment LID (6,906), too long (1,060) |
-| Near dedup | 335,148 | 16.7% | Near-duplicate web documents (text changed after deep clean) |
+| Stage      | Removed | Share of stage input | Main reason                                                        |
+| ---------- | ------: | -------------------: | ------------------------------------------------------------------ |
+| Merge      | 303,481 |                11.5% | Exact duplicates (MT560 ~68% within-source)                        |
+| Clean      | 104,009 |                 4.5% | Too short (&lt;25 words docs / &lt;5 words sentences) or corrupted |
+| LID        | 190,504 |                 8.6% | Non-Somali on document-class sources (mC4 highest rate)            |
+| Deep clean |  32,059 |                 1.6% | Boilerplate (23,948), segment LID (6,906), too long (1,060)        |
+| Near dedup | 335,148 |                16.7% | Near-duplicate web documents (text changed after deep clean)       |
 
 **36.7%** of raw documents did not survive the pipeline (v0.1: 32.6%). Re-run locally to
 reproduce; numbers shift slightly with upstream dataset versions.
@@ -92,20 +91,20 @@ download → merge + exact dedup → clean → LID → deep clean → near dedup
 raw/       merged/              cleaned/  lid/   deep_clean/  final/
 ```
 
-| Stage | Binary | Output |
-|-------|--------|--------|
-| Download | `download_*_so` | `data/raw/<source>/` |
-| Merge | `merge_corpora` | `data/merged/merged_so.jsonl` |
-| Clean | `clean_corpus` | `data/cleaned/cleaned_so.jsonl` |
-| Language ID | `lid_verify` | `data/lid/lid_so.jsonl` |
-| Deep clean | `deep_clean` | `data/deep_clean/deep_clean_so.jsonl` |
-| Near dedup | `near_dedup` | `data/final/final_so.jsonl` |
-| All stages | `run_pipeline` | chains the above |
+| Stage       | Binary                               | Output                                |
+| ----------- | ------------------------------------ | ------------------------------------- |
+| Download    | `download_*_so` / `download_quran_*` | `data/raw/<source>/`                  |
+| Merge       | `merge_corpora`                      | `data/merged/merged_so.jsonl`         |
+| Clean       | `clean_corpus`                       | `data/cleaned/cleaned_so.jsonl`       |
+| Language ID | `lid_verify`                         | `data/lid/lid_so.jsonl`               |
+| Deep clean  | `deep_clean`                         | `data/deep_clean/deep_clean_so.jsonl` |
+| Near dedup  | `near_dedup`                         | `data/final/final_so.jsonl`           |
+| All stages  | `run_pipeline`                       | chains the above                      |
 
-| Source class | Sources | Min words | LID | Near dedup |
-|--------------|---------|----------:|-----|------------|
-| Document | HPLT, CC100, mC4, MADLAD | 25 | `lingua` gate @ 0.50 | MinHash + LSH |
-| Sentence | OPUS, MT560 | 5 | tag-only | exact only |
+| Source class | Sources                                     | Min words | LID                  | Near dedup    |
+| ------------ | ------------------------------------------- | --------: | -------------------- | ------------- |
+| Document     | HPLT, CC100, mC4, MADLAD, Wikipedia, XL-Sum |        25 | `lingua` gate @ 0.50 | MinHash + LSH |
+| Sentence     | OPUS, MT560, QuranEnc, NLLB, Tanzil         |         5 | tag-only             | exact only    |
 
 Full commands and drop inspection: [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) ·
 specification: [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md).
@@ -116,14 +115,14 @@ A corpus-native **32k BPE tokenizer** is trained on the final release corpus
 (`data/final/final_so.jsonl`). The trained model ships in-repo; the plain-text
 training file is regenerated locally (~3.3 GB).
 
-| Metric | Value |
-|--------|------:|
-| Vocabulary | 32,000 |
-| Mean tokens/word (native BPE) | 1.53 |
-| Median tokens/word | 1.33 |
-| vs BERT-base | 2.69 (1.75× worse) |
-| vs XLM-RoBERTa | 1.94 (1.27× worse) |
-| Est. corpus tokens | ~810M |
+| Metric                        |              Value |
+| ----------------------------- | -----------------: |
+| Vocabulary                    |             32,000 |
+| Mean tokens/word (native BPE) |               1.53 |
+| Median tokens/word            |               1.33 |
+| vs BERT-base                  | 2.69 (1.75× worse) |
+| vs XLM-RoBERTa                | 1.94 (1.27× worse) |
+| Est. corpus tokens            |              ~810M |
 
 ```bash
 cd tokenizer
@@ -164,6 +163,10 @@ cargo build --release
 ./target/release/download_madlad_so
 ./target/release/download_mt560_so
 ./target/release/download_quran_so
+./target/release/download_wikipedia_so
+./target/release/download_xlsum_so
+./target/release/download_nllb_so
+./target/release/download_quran_tanzil
 
 ./target/release/run_pipeline --config configs/pipeline.toml
 ```
@@ -195,15 +198,19 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Sources
 
-| Tool | Dataset | License |
-|------|---------|---------|
-| `download_hplt_so` | [HPLT2.0 cleaned](https://huggingface.co/datasets/HPLT/HPLT2.0_cleaned) (`som_Latn`) | CC0-1.0 |
-| `download_cc100_so` | [CC-100 Somali](https://data.statmt.org/cc-100/so.txt.xz) | CC-BY-SA-4.0 |
-| `download_mc4_so` | [allenai/c4](https://huggingface.co/datasets/allenai/c4) (`so`) | ODC-BY |
-| `download_opus_so` | [OPUS ParaCrawl](https://huggingface.co/datasets/Helsinki-NLP/opus_paracrawl) (`en-so`) | CC0-1.0 |
-| `download_madlad_so` | [MADLAD-400](https://huggingface.co/datasets/allenai/MADLAD-400) (`so`) | ODC-BY |
-| `download_mt560_so` | [MT560 en–so pairs](https://huggingface.co/datasets/michsethowusu/english-somali_sentence-pairs_mt560) | CC-BY-4.0 |
-| `download_quran_so` | [QuranEnc Somali (Yacob Yusuf)](https://quranenc.com/api/v1/translation/sura/somali_yacob/1) | see source |
+| Tool                    | Dataset                                                                                                | License      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------ | ------------ |
+| `download_hplt_so`      | [HPLT2.0 cleaned](https://huggingface.co/datasets/HPLT/HPLT2.0_cleaned) (`som_Latn`)                   | CC0-1.0      |
+| `download_cc100_so`     | [CC-100 Somali](https://data.statmt.org/cc-100/so.txt.xz)                                              | CC-BY-SA-4.0 |
+| `download_mc4_so`       | [allenai/c4](https://huggingface.co/datasets/allenai/c4) (`so`)                                        | ODC-BY       |
+| `download_opus_so`      | [OPUS ParaCrawl](https://huggingface.co/datasets/Helsinki-NLP/opus_paracrawl) (`en-so`)                | CC0-1.0      |
+| `download_madlad_so`    | [MADLAD-400](https://huggingface.co/datasets/allenai/MADLAD-400) (`so`)                                | ODC-BY       |
+| `download_mt560_so`     | [MT560 en–so pairs](https://huggingface.co/datasets/michsethowusu/english-somali_sentence-pairs_mt560) | CC-BY-4.0    |
+| `download_quran_so`     | [QuranEnc Somali (Yacob Yusuf)](https://quranenc.com/api/v1/translation/sura/somali_yacob/1)           | see source   |
+| `download_wikipedia_so` | [Somali Wikipedia](https://huggingface.co/datasets/wikimedia/wikipedia) (`20231101.so`)                | CC-BY-SA-4.0 |
+| `download_xlsum_so`     | [XL-Sum Somali](https://huggingface.co/datasets/csebuetnlp/xlsum) (`somali`)                           | CC-BY-4.0    |
+| `download_nllb_so`      | [NLLB English–Somali](https://storage.googleapis.com/allennlp-data-bucket/nllb/eng_Latn-som_Latn.gz)   | ODC-BY       |
+| `download_quran_tanzil` | [Tanzil Qur'an Somali](https://tanzil.net/trans/?transID=so.abduh) (`so.abduh`)                        | see source   |
 
 Scale estimates, overlap, and per-record licensing: [docs/SOURCES.md](docs/SOURCES.md).
 
@@ -243,16 +250,16 @@ Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Docs
 
-| Doc | Description |
-|-----|-------------|
-| [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) | Stage commands, data flow, inspecting drops |
-| [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md) | Phase 3 cleaning, LID, and dedup specification |
-| [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md) | v0.2 deep-clean audit and strategy |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Workspace layout and crate design |
-| [docs/SOURCES.md](docs/SOURCES.md) | Source registry and scale estimates |
-| [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md) | Record metadata and licensing |
-| [PLAN.md](PLAN.md) | Vision and two-track strategy |
-| [ROADMAP.md](ROADMAP.md) | Phases and milestones |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
-| [tokenizer/PAPER.md](tokenizer/PAPER.md) | Somali BPE tokenizer methodology and benchmarks |
-| [CHANGELOG.md](CHANGELOG.md) | Project history |
+| Doc                                                    | Description                                     |
+| ------------------------------------------------------ | ----------------------------------------------- |
+| [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md)         | Stage commands, data flow, inspecting drops     |
+| [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md)         | Phase 3 cleaning, LID, and dedup specification  |
+| [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md) | v0.2 deep-clean audit and strategy              |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)           | Workspace layout and crate design               |
+| [docs/SOURCES.md](docs/SOURCES.md)                     | Source registry and scale estimates             |
+| [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md)     | Record metadata and licensing                   |
+| [PLAN.md](PLAN.md)                                     | Vision and two-track strategy                   |
+| [ROADMAP.md](ROADMAP.md)                               | Phases and milestones                           |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                     | How to contribute                               |
+| [tokenizer/PAPER.md](tokenizer/PAPER.md)               | Somali BPE tokenizer methodology and benchmarks |
+| [CHANGELOG.md](CHANGELOG.md)                           | Project history                                 |
