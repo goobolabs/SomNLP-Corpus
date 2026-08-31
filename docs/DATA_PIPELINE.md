@@ -49,7 +49,7 @@ MT560 records include a source tag:
 ./target/release/download_wikipedia_so    [--limit N] [--no-stream]
 ./target/release/download_xlsum_so        [--limit N] [--field F] [--splits S...]
 ./target/release/download_nllb_so         [--limit N] [--min-laser L] [--min-som-lid S]
-./target/release/download_quran_tanzil    [--limit N] [--footnotes-output P]
+./target/release/download_quran_tanzil    [--limit N] [--translation-id ID]
 ```
 
 | Flag | Description |

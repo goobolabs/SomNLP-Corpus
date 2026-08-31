@@ -7,6 +7,7 @@ use clap::Parser;
 use common::hash::content_hash;
 use corpus_tools::cli;
 use corpus_tools::jsonl::{is_non_empty, read_jsonl_texts, DroppedWriter, JsonlWriter};
+use corpus_tools::raw_paths::source_raw_paths;
 use corpus_tools::stats::{format_number, DedupCounters};
 use serde::Deserialize;
 use serde_json::json;
@@ -62,10 +63,6 @@ fn resolve_sources(args: &Args) -> Vec<String> {
         },
         Err(_) => FALLBACK_ORDER.iter().map(|s| s.to_string()).collect(),
     }
-}
-
-fn source_path(raw_dir: &Path, source: &str) -> PathBuf {
-    raw_dir.join(source).join(format!("{source}_so.jsonl"))
 }
 
 fn pct(n: u64, total: u64) -> String {
@@ -197,41 +194,54 @@ fn main() -> Result<()> {
     let mut source_status = Vec::new();
 
     'sources: for source in &sources {
-        let path = source_path(&args.raw_dir, source);
-        if !path.exists() {
-            eprintln!("Skipping missing source: {}", path.display());
+        let paths: Vec<PathBuf> = source_raw_paths(&args.raw_dir, source)
+            .into_iter()
+            .filter(|path| path.exists())
+            .collect();
+        if paths.is_empty() {
+            let expected = source_raw_paths(&args.raw_dir, source);
+            eprintln!(
+                "Skipping missing source {source}: none of {} exist",
+                expected
+                    .iter()
+                    .map(|path| path.display().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
             source_status.push((source.clone(), false, 0u64));
             continue;
         }
 
         let mut kept_here = 0u64;
-        for text in read_jsonl_texts(&path)? {
-            if args.limit.is_some_and(|limit| counters.total_kept >= limit) {
-                source_status.push((source.clone(), true, kept_here));
-                break 'sources;
-            }
-            let text = text?;
-            if !is_non_empty(&text) {
-                continue;
-            }
-
-            counters.record_input(source);
-            let hash = content_hash(&text).0;
-            if let Some(first_source) = seen.get(&hash) {
-                if first_source == source {
-                    counters.record_within_dup(source);
-                    dropped.write(source, &text, "within_source_dup", None)?;
-                } else {
-                    counters.record_cross_dup(source);
-                    dropped.write(source, &text, "cross_source_dup", Some(first_source))?;
+        for path in &paths {
+            for text in read_jsonl_texts(path)? {
+                if args.limit.is_some_and(|limit| counters.total_kept >= limit) {
+                    source_status.push((source.clone(), true, kept_here));
+                    break 'sources;
                 }
-                continue;
-            }
+                let text = text?;
+                if !is_non_empty(&text) {
+                    continue;
+                }
 
-            seen.insert(hash, source.clone());
-            writer.write_text_source(source, &text)?;
-            counters.record_kept(source);
-            kept_here += 1;
+                counters.record_input(source);
+                let hash = content_hash(&text).0;
+                if let Some(first_source) = seen.get(&hash) {
+                    if first_source == source {
+                        counters.record_within_dup(source);
+                        dropped.write(source, &text, "within_source_dup", None)?;
+                    } else {
+                        counters.record_cross_dup(source);
+                        dropped.write(source, &text, "cross_source_dup", Some(first_source))?;
+                    }
+                    continue;
+                }
+
+                seen.insert(hash, source.clone());
+                writer.write_text_source(source, &text)?;
+                counters.record_kept(source);
+                kept_here += 1;
+            }
         }
 
         source_status.push((source.clone(), true, kept_here));

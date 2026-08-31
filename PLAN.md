@@ -65,15 +65,22 @@ collection adds fresher, higher-quality, domain-specific text that public dumps 
 
 | Source | Approx. raw scale |
 |--------|-------------------|
-| HPLT v2 (`som_Latn`) | ~505M tokens |
-| CC100 | ~81M tokens |
-| mC4 | tens of millions (overlaps with above) |
-| MADLAD-400 | tens of millions |
-| OPUS ParaCrawl | parallel sentences |
-| MT560 | ~161K sentence pairs |
+| HPLT v2 (`som_Latn`) | ~966K docs · ~505M tokens |
+| CC100 | ~397K docs · ~81M tokens |
+| mC4 | ~893K docs · tens of millions of tokens |
+| MADLAD-400 | ~200K docs · tens of millions of tokens |
+| OPUS ParaCrawl | ~15K parallel sentences |
+| MT560 | ~162K sentence pairs |
+| Somali Wikipedia | ~9K articles · ~1–3M tokens |
+| XL-Sum | ~15K news articles |
+| NLLB en–so | ~1.5M parallel sentences |
+| QuranEnc (Yacob Yusuf) | ~7.4K rows (6,236 verses + 1,137 footnotes) |
+| Tanzil (Abduh) | ~6.2K ayahs (no footnotes) |
 
-After cross-source dedup and quality filtering, Track A alone can reach **~250–350M
-final tokens** — comparable to published Somali web corpora.
+All eleven downloaders are implemented. After cross-source dedup and quality filtering,
+full Track A is projected at **~3.0M final documents · ~555M words · ~850M native
+subword tokens**. A measured six-source baseline reached **529M words · ~810M tokens**
+(2026-07-07 v0.2 run — see [README.md](README.md)).
 
 ### Track B — collected sources (estimates)
 

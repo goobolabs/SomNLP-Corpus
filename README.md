@@ -51,12 +51,50 @@ SomNLP ── SomNLP-Corpus (this repo) → Translate · NER · QA · Instruct �
 
 ## Corpus results
 
-Full 6-source run (HPLT, CC100, mC4, OPUS, MADLAD, MT560) through the **v0.2 pipeline**
-(merge → clean → LID → deep clean → near-dedup). Document counts are from per-stage
-stats; **final word count is measured** on `data/final/final_so.jsonl`. Intermediate
-word/token figures use the final corpus average (~317 words/doc) and are marked with ~.
-v0.1 baseline (without deep clean): 1.77M docs · 591M words — see
-[docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md).
+All **eleven Track A sources** below are implemented; the v0.2 pipeline has been
+**measured end-to-end on the first six** (HPLT, CC100, mC4, OPUS, MADLAD, MT560).
+Full-corpus figures for all eleven apply the same stage retention rates to per-source
+raw scale (see [docs/SOURCES.md](docs/SOURCES.md)); figures marked with ~ are
+projections. v0.1 baseline (six sources, no deep clean): 1.77M docs · 591M words —
+see [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md).
+
+### Per-source raw scale (all eleven)
+
+| Source | Class | Raw documents | Notes |
+| ------ | ----- | ------------: | ----- |
+| HPLT | document | 966,507 | measured download |
+| CC100 | document | 396,524 | measured download |
+| mC4 | document | 893,012 | measured download |
+| MADLAD | document | 200,494 | measured download |
+| OPUS | sentence | 14,879 | measured download |
+| MT560 | sentence | 161,865 | measured download |
+| Wikipedia | document | ~9,000 | HF `20231101.so` |
+| XL-Sum | document | ~15,000 | train + validation + test |
+| NLLB en–so | sentence | ~1,500,000 | official AllenAI export |
+| QuranEnc (Yacob Yusuf) | sentence | 7,373 | 6,236 verses + 1,137 footnotes (measured) |
+| Tanzil (Abduh) | sentence | 6,236 | 6,236 ayahs only (no footnotes upstream) |
+| **Qur'an subtotal** | | **13,609** | two translations, counted separately |
+| **Total (all eleven)** | | **~4.17M** | |
+
+### Projected — full Track A (eleven sources)
+
+| Stage            |     Documents |           Words |    Tokens | Removed this stage |
+| ---------------- | ------------: | --------------: | --------: | -----------------: |
+| Downloaded (raw) |     ~4,170,000 |           ~860M |    ~1.29B |                  — |
+| Merged           |     ~3,690,000 |           ~760M |    ~1.14B |            ~480,000 |
+| Cleaned          |     ~3,520,000 |           ~725M |    ~1.09B |            ~170,000 |
+| LID verified     |     ~3,340,000 |           ~690M |    ~1.03B |            ~180,000 |
+| Deep cleaned     |     ~3,290,000 |           ~680M |    ~1.02B |             ~50,000 |
+| **Final**        |     **~3.0M** |       **~555M** |   **~850M** |            ~290,000 |
+
+**Overall (projected):** ~4.17M raw rows → **~3.0M clean documents** · **~555M words**
+· **~850M subword tokens** (native 32k BPE, mean 1.53 tokens/word — see
+[tokenizer/](tokenizer/)). NLLB adds ~1.4M parallel sentences; both Qur'an
+translations (QuranEnc + Tanzil, ~13.6K rows combined) are counted separately;
+web-crawl overlap with Wikipedia and XL-Sum is modest. Re-run locally after
+downloading all sources to replace projections with measured stats.
+
+### Measured — six-source baseline (2026-07-07)
 
 | Stage            |     Documents |           Words |    Tokens | Removed this stage |
 | ---------------- | ------------: | --------------: | --------: | -----------------: |
@@ -67,9 +105,8 @@ v0.1 baseline (without deep clean): 1.77M docs · 591M words — see
 | Deep cleaned     |     2,003,228 |           ~635M |     ~952M |             32,059 |
 | **Final**        | **1,668,080** | **528,853,952** | **~810M** |            335,148 |
 
-**Overall:** 2.63M raw rows → **1.67M clean documents** · **529M words** · **~810M subword tokens**
-(native 32k BPE, mean 1.53 tokens/word — see [tokenizer/](tokenizer/)). Output:
-`data/final/final_so.jsonl` (~4.0 GB).
+**Overall (measured):** 2.63M raw rows → **1.67M clean documents** · **529M words**
+· **~810M subword tokens**. Output: `data/final/final_so.jsonl` (~4.0 GB).
 
 ### What cleaning removed
 
@@ -81,7 +118,9 @@ v0.1 baseline (without deep clean): 1.77M docs · 591M words — see
 | Deep clean |  32,059 |                 1.6% | Boilerplate (23,948), segment LID (6,906), too long (1,060)        |
 | Near dedup | 335,148 |                16.7% | Near-duplicate web documents (text changed after deep clean)       |
 
-**36.7%** of raw documents did not survive the pipeline (v0.1: 32.6%). Re-run locally to
+**36.7%** of raw documents did not survive the six-source pipeline (v0.1: 32.6%).
+The eleven-source projection assumes similar per-stage rates; sentence-class sources
+(NLLB, OPUS, MT560, QuranEnc, Tanzil) skip near-dedup and LID gating. Re-run locally to
 reproduce; numbers shift slightly with upstream dataset versions.
 
 ## Pipeline
@@ -122,7 +161,8 @@ training file is regenerated locally (~3.3 GB).
 | Median tokens/word            |               1.33 |
 | vs BERT-base                  | 2.69 (1.75× worse) |
 | vs XLM-RoBERTa                | 1.94 (1.27× worse) |
-| Est. corpus tokens            |              ~810M |
+| Est. corpus tokens (11-src)   |              ~850M |
+| Measured (6-src baseline)     |              ~810M |
 
 ```bash
 cd tokenizer

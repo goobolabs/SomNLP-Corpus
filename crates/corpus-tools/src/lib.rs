@@ -10,6 +10,7 @@ pub mod nllb;
 pub mod normalize;
 pub mod parquet_source;
 pub mod quran;
+pub mod raw_paths;
 pub mod stats;
 pub mod tanzil;
 pub mod wikipedia;

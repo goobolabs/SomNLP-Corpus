@@ -19,11 +19,11 @@ See also: [METADATA_SCHEMA.md](METADATA_SCHEMA.md), [PLAN.md](../PLAN.md).
 | `madlad` | MADLAD-400 `so` | web crawl | A | tens of millions | ODC-BY | `download_madlad_so` | done | Clean split default; `--include-noisy` optional |
 | `opus` | OPUS ParaCrawl `en-so` | parallel text | A | parallel sentences | CC0-1.0 | `download_opus_so` | done | Somali column from `translation.so` |
 | `mt560` | MT560 en–so pairs | parallel / religious | A | ~161K pairs | CC-BY-4.0 | `download_mt560_so` | done | Writes `source: mt560` tag in raw JSONL |
-| `quran` | QuranEnc Somali (Yacob Yusuf) | religious | A | ~6.2K verses + footnotes | see source | `download_quran_so` | done | Two outputs: verse translations and footnote explanations |
+| `quran` | QuranEnc Somali (Yacob Yusuf) | religious | A | 7,373 rows (6,236 verses + 1,137 footnotes) | see source | `download_quran_so` | done | Two outputs: verse translations and footnote explanations |
 | `wikipedia` | Somali Wikipedia | encyclopedia | A | ~1–3M tokens | CC-BY-SA-4.0 | `download_wikipedia_so` | done | HF `wikimedia/wikipedia` dataset (`20231101.so`) |
 | `xlsum` | XL-Sum Somali | news / summary | A | ~15K articles | CC-BY-4.0 | `download_xlsum_so` | done | `csebuetnlp/xlsum` (`somali` config) |
 | `nllb` | NLLB English–Somali | parallel text | A | ~1.5M pairs | ODC-BY | `download_nllb_so` | done | Official Meta/AllenAI NLLB TSV export |
-| `tanzil` | Tanzil Qur'an Somali (Abduh) | religious | A | ~6.2K verses | see source | `download_quran_tanzil` | done | Mahmud Muhammad Abduh translation from Tanzil.net |
+| `tanzil` | Tanzil Qur'an Somali (Abduh) | religious | A | 6,236 ayahs | see source | `download_quran_tanzil` | done | Separate translation from QuranEnc; no footnotes upstream |
 
 ### Track A licensing note
 
@@ -31,15 +31,13 @@ There is **no single corpus license**. Redistribution of the combined corpus req
 honoring each upstream license. The `license` field on processed records is copied
 from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 
-### Skipped — Track A
-
-| Key | Name | Reason | Status |
-|-----|------|--------|--------|
-| `oscar` | OSCAR-2301 `so` | Official split: 6 docs / 51 words; LID failed on Somali | skipped |
-
 ### Track A outlook
 
-~250–350M final tokens after cross-source dedup and quality filtering.
+Eleven public sources total **~4.17M raw documents**. After merge, LID, deep clean, and
+near-dedup, the full Track A corpus is projected at **~3.0M final documents · ~555M
+words · ~850M native subword tokens** (see [README.md](../README.md)). A measured
+six-source baseline (HPLT, CC100, mC4, OPUS, MADLAD, MT560) reached **1.67M docs ·
+529M words · ~810M tokens** on the 2026-07-07 v0.2 run.
 
 ---
 
