@@ -20,9 +20,9 @@ See also: [METADATA_SCHEMA.md](METADATA_SCHEMA.md), [PLAN.md](../PLAN.md).
 | `opus` | OPUS ParaCrawl `en-so` | parallel text | A | parallel sentences | CC0-1.0 | `download_opus_so` | done | Somali column from `translation.so` |
 | `mt560` | MT560 en–so pairs | parallel / religious | A | ~161K pairs | CC-BY-4.0 | `download_mt560_so` | done | Writes `source: mt560` tag in raw JSONL |
 | `quran` | QuranEnc Somali (Yacob Yusuf) | religious | A | 7,373 rows (6,236 verses + 1,137 footnotes) | see source | `download_quran_so` | done | Two outputs: verse translations and footnote explanations |
-| `wikipedia` | Somali Wikipedia | encyclopedia | A | ~1–3M tokens | CC-BY-SA-4.0 | `download_wikipedia_so` | done | HF `wikimedia/wikipedia` dataset (`20231101.so`) |
-| `xlsum` | XL-Sum Somali | news / summary | A | ~15K articles | CC-BY-4.0 | `download_xlsum_so` | done | `csebuetnlp/xlsum` (`somali` config) |
-| `nllb` | NLLB English–Somali | parallel text | A | ~1.5M pairs | ODC-BY | `download_nllb_so` | done | Official Meta/AllenAI NLLB TSV export |
+| `wikipedia` | Somali Wikipedia | encyclopedia | A | 9,021 articles (measured) | CC-BY-SA-4.0 | `download_wikipedia_so` | done | HF `wikimedia/wikipedia` dataset (`20231101.so`) |
+| `xlsum` | XL-Sum Somali | news / summary | A | 7,452 articles (measured) | CC-BY-4.0 | `download_xlsum_so` | done | `csebuetnlp/xlsum` (`somali` config) |
+| `nllb` | NLLB English–Somali | parallel text | A | 10.2M pairs raw · 4.7M kept at merge | ODC-BY | `download_nllb_so` | done | Official Meta/AllenAI NLLB TSV export |
 | `tanzil` | Tanzil Qur'an Somali (Abduh) | religious | A | 6,236 ayahs | see source | `download_quran_tanzil` | done | Separate translation from QuranEnc; no footnotes upstream |
 
 ### Track A licensing note
@@ -33,11 +33,27 @@ from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 
 ### Track A outlook
 
-Eleven public sources total **~4.17M raw documents**. After merge, LID, deep clean, and
-near-dedup, the full Track A corpus is projected at **~3.0M final documents · ~555M
-words · ~850M native subword tokens** (see [README.md](../README.md)). A measured
-six-source baseline (HPLT, CC100, mC4, OPUS, MADLAD, MT560) reached **1.67M docs ·
-529M words · ~810M tokens** on the 2026-07-07 v0.2 run.
+Eleven public sources total **12.9M raw documents** (NLLB dominates). After merge,
+LID, deep clean, and near-dedup, the full Track A corpus measured **6.15M final
+documents · 600M words** (2026-08-31 run — see [README.md](../README.md)).
+Incremental measurement notes: [reports/runs/MEASUREMENT.md](../reports/runs/MEASUREMENT.md).
+
+### Measured final documents (2026-08-31)
+
+| Key | Raw | Kept at merge | Final |
+|-----|----:|-------------:|------:|
+| `nllb` | 10,229,073 | 4,727,602 | 4,463,021 |
+| `mc4` | 893,012 | 892,852 | 595,193 |
+| `hplt` | 966,507 | 798,364 | 576,995 |
+| `cc100` | 396,524 | 374,721 | 300,664 |
+| `madlad` | 200,494 | 200,484 | 133,410 |
+| `mt560` | 161,865 | 51,083 | 49,195 |
+| `opus` | 14,879 | 12,296 | 12,126 |
+| `quran` | 7,373 | 7,277 | 7,072 |
+| `xlsum` | 7,452 | 7,451 | 5,649 |
+| `wikipedia` | 9,021 | 8,994 | 5,503 |
+| `quran-tanzil` | 6,236 | 6,048 | 5,773 |
+| **Total** | **12,892,436** | **7,087,172** | **6,154,601** |
 
 ---
 

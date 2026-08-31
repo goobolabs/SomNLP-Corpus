@@ -5,7 +5,19 @@ version = "1"
 
 # Merge: first-seen-wins order for exact dedup (curated/parallel first, largest
 # web crawl last). See CLEANING_PLAN.md §1.
-merge_source_order = ["mt560", "opus", "cc100", "mc4", "madlad", "hplt"]
+merge_source_order = [
+  "mt560",
+  "opus",
+  "cc100",
+  "mc4",
+  "madlad",
+  "hplt",
+  "quran-tanzil",
+  "quran",
+  "wikipedia",
+  "xlsum",
+  "nllb",
+]
 
 [clean]
 # Per-class length floors (words). Document floor from empirical benchmark:
