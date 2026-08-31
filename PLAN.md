@@ -71,16 +71,15 @@ collection adds fresher, higher-quality, domain-specific text that public dumps 
 | MADLAD-400 | ~200K docs · tens of millions of tokens |
 | OPUS ParaCrawl | ~15K parallel sentences |
 | MT560 | ~162K sentence pairs |
-| Somali Wikipedia | ~9K articles · ~1–3M tokens |
-| XL-Sum | ~15K news articles |
-| NLLB en–so | ~1.5M parallel sentences |
+| Somali Wikipedia | 9,021 articles (measured) |
+| XL-Sum | 7,452 news articles (measured) |
+| NLLB en–so | 10.2M parallel sentences raw · 4.7M kept at merge |
 | QuranEnc (Yacob Yusuf) | ~7.4K rows (6,236 verses + 1,137 footnotes) |
 | Tanzil (Abduh) | ~6.2K ayahs (no footnotes) |
 
 All eleven downloaders are implemented. After cross-source dedup and quality filtering,
-full Track A is projected at **~3.0M final documents · ~555M words · ~850M native
-subword tokens**. A measured six-source baseline reached **529M words · ~810M tokens**
-(2026-07-07 v0.2 run — see [README.md](README.md)).
+full Track A measured **6.15M final documents · 600M words** (2026-08-31 run — see
+[README.md](README.md)).
 
 ### Track B — collected sources (estimates)
 

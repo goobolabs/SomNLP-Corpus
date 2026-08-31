@@ -32,8 +32,10 @@
 | 4 — Collection          | Web scraping & targeted sources       | 🔜 Next  |
 | 5 — Release             | Hugging Face packaging                | Planned |
 
-**Track A is live:** download eleven public Somali datasets, merge, clean, verify language,
-and deduplicate into a training-ready corpus. **Track B next:** targeted Somali web collection.
+**Track A is live:** eleven public Somali datasets merged, cleaned, and measured end-to-end.
+
+**Current corpus (2026-08-31):** **6.15M documents** · **600M words** · 6.3 GB
+(`data/final/final_so.jsonl`). **Track B next:** targeted Somali web collection.
 
 See [ROADMAP.md](ROADMAP.md) and [PLAN.md](PLAN.md).
 
@@ -51,12 +53,10 @@ SomNLP ── SomNLP-Corpus (this repo) → Translate · NER · QA · Instruct �
 
 ## Corpus results
 
-All **eleven Track A sources** below are implemented; the v0.2 pipeline has been
-**measured end-to-end on the first six** (HPLT, CC100, mC4, OPUS, MADLAD, MT560).
-Full-corpus figures for all eleven apply the same stage retention rates to per-source
-raw scale (see [docs/SOURCES.md](docs/SOURCES.md)); figures marked with ~ are
-projections. v0.1 baseline (six sources, no deep clean): 1.77M docs · 591M words —
-see [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md).
+All **eleven Track A sources** are implemented and **measured end-to-end** through the
+v0.2 pipeline (2026-08-31 run). v0.1 baseline (six sources, no deep clean): 1.77M docs
+· 591M words — see [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md). Incremental
+measurement notes: [reports/runs/MEASUREMENT.md](reports/runs/MEASUREMENT.md).
 
 ### Per-source raw scale (all eleven)
 
@@ -68,60 +68,65 @@ see [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md).
 | MADLAD | document | 200,494 | measured download |
 | OPUS | sentence | 14,879 | measured download |
 | MT560 | sentence | 161,865 | measured download |
-| Wikipedia | document | ~9,000 | HF `20231101.so` |
-| XL-Sum | document | ~15,000 | train + validation + test |
-| NLLB en–so | sentence | ~1,500,000 | official AllenAI export |
+| Wikipedia | document | 9,021 | measured download |
+| XL-Sum | document | 7,452 | measured download (train + val + test) |
+| NLLB en–so | sentence | 10,229,073 | measured download; official AllenAI export |
 | QuranEnc (Yacob Yusuf) | sentence | 7,373 | 6,236 verses + 1,137 footnotes (measured) |
 | Tanzil (Abduh) | sentence | 6,236 | 6,236 ayahs only (no footnotes upstream) |
 | **Qur'an subtotal** | | **13,609** | two translations, counted separately |
-| **Total (all eleven)** | | **~4.17M** | |
+| **Total (all eleven)** | | **12,892,436** | NLLB dominates raw row count |
 
-### Projected — full Track A (eleven sources)
-
-| Stage            |     Documents |           Words |    Tokens | Removed this stage |
-| ---------------- | ------------: | --------------: | --------: | -----------------: |
-| Downloaded (raw) |     ~4,170,000 |           ~860M |    ~1.29B |                  — |
-| Merged           |     ~3,690,000 |           ~760M |    ~1.14B |            ~480,000 |
-| Cleaned          |     ~3,520,000 |           ~725M |    ~1.09B |            ~170,000 |
-| LID verified     |     ~3,340,000 |           ~690M |    ~1.03B |            ~180,000 |
-| Deep cleaned     |     ~3,290,000 |           ~680M |    ~1.02B |             ~50,000 |
-| **Final**        |     **~3.0M** |       **~555M** |   **~850M** |            ~290,000 |
-
-**Overall (projected):** ~4.17M raw rows → **~3.0M clean documents** · **~555M words**
-· **~850M subword tokens** (native 32k BPE, mean 1.53 tokens/word — see
-[tokenizer/](tokenizer/)). NLLB adds ~1.4M parallel sentences; both Qur'an
-translations (QuranEnc + Tanzil, ~13.6K rows combined) are counted separately;
-web-crawl overlap with Wikipedia and XL-Sum is modest. Re-run locally after
-downloading all sources to replace projections with measured stats.
-
-### Measured — six-source baseline (2026-07-07)
+### Measured — full Track A (eleven sources, 2026-08-31)
 
 | Stage            |     Documents |           Words |    Tokens | Removed this stage |
 | ---------------- | ------------: | --------------: | --------: | -----------------: |
-| Downloaded (raw) |     2,633,281 |           ~835M |    ~1.25B |                  — |
-| Merged           |     2,329,800 |           ~738M |    ~1.11B |            303,481 |
-| Cleaned          |     2,225,791 |           ~706M |    ~1.06B |            104,009 |
-| LID verified     |     2,035,287 |           ~645M |     ~968M |            190,504 |
-| Deep cleaned     |     2,003,228 |           ~635M |     ~952M |             32,059 |
-| **Final**        | **1,668,080** | **528,853,952** | **~810M** |            335,148 |
+| Downloaded (raw) |    12,892,436 |               — |         — |                  — |
+| Merged           |     7,087,172 |               — |         — |          5,805,264 |
+| Cleaned          |     6,716,987 |               — |         — |            370,185 |
+| LID verified     |     6,526,208 |               — |         — |            190,779 |
+| Deep cleaned     |     6,493,085 |               — |         — |             33,123 |
+| **Final**        | **6,154,601** | **600,085,996** | see tokenizer |            338,484 |
 
-**Overall (measured):** 2.63M raw rows → **1.67M clean documents** · **529M words**
-· **~810M subword tokens**. Output: `data/final/final_so.jsonl` (~4.0 GB).
+**Overall (measured):** 12.9M raw rows → **6.15M clean documents** · **600M words**.
+Output: `data/final/final_so.jsonl` (~6.3 GB). Subword token count is produced by the
+[tokenizer pipeline](#tokenizer) (re-run after corpus updates). NLLB contributed 10.2M
+raw parallel sentences; 53.8% were within-source duplicates at merge, leaving 4.73M
+unique rows (4.46M survive to final).
 
-### What cleaning removed
+### Per-source contribution (final documents)
+
+| Source | Raw | Kept at merge | Final | Share of final |
+| ------ | --: | ------------: | ----: | -------------: |
+| NLLB | 10,229,073 | 4,727,602 | 4,463,021 | 72.5% |
+| mC4 | 893,012 | 892,852 | 595,193 | 9.7% |
+| HPLT | 966,507 | 798,364 | 576,995 | 9.4% |
+| CC100 | 396,524 | 374,721 | 300,664 | 4.9% |
+| MADLAD | 200,494 | 200,484 | 133,410 | 2.2% |
+| MT560 | 161,865 | 51,083 | 49,195 | 0.8% |
+| OPUS | 14,879 | 12,296 | 12,126 | 0.2% |
+| QuranEnc | 7,373 | 7,277 | 7,072 | 0.1% |
+| XL-Sum | 7,452 | 7,451 | 5,649 | 0.1% |
+| Wikipedia | 9,021 | 8,994 | 5,503 | 0.1% |
+| Tanzil | 6,236 | 6,048 | 5,773 | 0.1% |
+| **Total** | **12,892,436** | **7,087,172** | **6,154,601** | 100% |
+
+NLLB dominates both raw volume and final size. Web crawls (HPLT, mC4, CC100, MADLAD)
+lose most documents to near-dedup and LID; sentence-class sources pass through unchanged.
+
+### What cleaning removed (eleven-source run)
 
 | Stage      | Removed | Share of stage input | Main reason                                                        |
 | ---------- | ------: | -------------------: | ------------------------------------------------------------------ |
-| Merge      | 303,481 |                11.5% | Exact duplicates (MT560 ~68% within-source)                        |
-| Clean      | 104,009 |                 4.5% | Too short (&lt;25 words docs / &lt;5 words sentences) or corrupted |
-| LID        | 190,504 |                 8.6% | Non-Somali on document-class sources (mC4 highest rate)            |
-| Deep clean |  32,059 |                 1.6% | Boilerplate (23,948), segment LID (6,906), too long (1,060)        |
-| Near dedup | 335,148 |                16.7% | Near-duplicate web documents (text changed after deep clean)       |
+| Merge      | 5,805,264 |                45.0% | Within-source dupes (NLLB 53.8%; MT560 ~68%)                      |
+| Clean      |   370,185 |                 5.2% | Too short (&lt;25 words docs / &lt;5 words sentences) or corrupted |
+| LID        |   190,779 |                 2.8% | Non-Somali on document-class sources                               |
+| Deep clean |    33,123 |                 0.5% | Boilerplate, segment LID, too long                                 |
+| Near dedup |   338,484 |                 5.2% | Near-duplicate web documents                                       |
 
-**36.7%** of raw documents did not survive the six-source pipeline (v0.1: 32.6%).
-The eleven-source projection assumes similar per-stage rates; sentence-class sources
-(NLLB, OPUS, MT560, QuranEnc, Tanzil) skip near-dedup and LID gating. Re-run locally to
-reproduce; numbers shift slightly with upstream dataset versions.
+**52.2%** of raw documents did not survive the eleven-source pipeline (mostly NLLB
+within-source dedup at merge). Sentence-class sources (NLLB, OPUS, MT560, QuranEnc,
+Tanzil) skip near-dedup and LID gating. Re-run locally to reproduce; numbers shift
+slightly with upstream dataset versions.
 
 ## Pipeline
 
@@ -150,37 +155,91 @@ specification: [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md).
 
 ## Tokenizer
 
-A corpus-native **32k BPE tokenizer** is trained on the final release corpus
-(`data/final/final_so.jsonl`). The trained model ships in-repo; the plain-text
-training file is regenerated locally (~3.3 GB).
+Four Python scripts train and evaluate corpus-native BPE tokenizers on
+`data/final/final_so.jsonl`:
 
-| Metric                        |              Value |
-| ----------------------------- | -----------------: |
-| Vocabulary                    |             32,000 |
-| Mean tokens/word (native BPE) |               1.53 |
-| Median tokens/word            |               1.33 |
-| vs BERT-base                  | 2.69 (1.75× worse) |
-| vs XLM-RoBERTa                | 1.94 (1.27× worse) |
-| Est. corpus tokens (11-src)   |              ~850M |
-| Measured (6-src baseline)     |              ~810M |
+```text
+final_so.jsonl  →  prepare_corpus.py  →  somali_raw_corpus.txt   (training text)
+                                      →  eval_holdout.jsonl      (held-out split)
+                                              ↓
+                                         train.py  →  somali-bpe-v2.json
+                                              ↓
+                                       benchmark.py  →  benchmark_results.json
+                                              ↓
+                                       export_hf.py  →  v2/  (AutoTokenizer-loadable)
+```
+
+1. **`prepare_corpus.py`** — streams JSONL, extracts each record's `text`, applies NFC
+   normalization, and splits documents into training text (~6 GB) and a deterministic
+   held-out evaluation split (`blake2b-8(id) mod 1000 < 8`, ~0.8%). `--stats` writes
+   per-source document/word counts and a corpus fingerprint to `tokenizer_stats.json`.
+2. **`train.py`** — trains a ByteLevel BPE via streaming iterator; the corpus is never
+   loaded into RAM. Refuses to run if the training text no longer matches the release
+   corpus. `--sweep` trains several vocabulary sizes; `--derive-from` produces smaller
+   sizes by truncating a larger run's merge list (exact for BPE, and far cheaper).
+3. **`benchmark.py`** — scores every tokenizer on the same held-out documents in one
+   streaming pass: tokens/word, bytes/token, round-trip fidelity, unknown-token rate, and
+   a per-source breakdown, against optional BERT-base and XLM-RoBERTa baselines.
+4. **`export_hf.py`** — promotes a chosen candidate to `somali-bpe-v2.json` and writes a
+   `transformers`-loadable `v2/` directory.
+
+### v1 and v2
+
+**v1** (`somali-bpe-tokenizer.json`, 32k) is retained unchanged so its published figures
+stay reproducible. It has two defects that make it unsuitable for a generative model:
+`decode()` does not restore whitespace (its `BPEDecoder` expects an `</w>` suffix the
+trainer never emitted), and out-of-alphabet characters collapse to `<unk>`.
+
+**v2** (`somali-bpe-v2.json`) is a ByteLevel BPE. Decoding inverts encoding exactly, and
+an unknown token is unreachable because all 256 bytes seed the alphabet. Both properties
+are enforced by the test suite rather than merely observed.
+
+| Metric | v1 (32k, whitespace) | **v2 (48k, ByteLevel)** |
+| ------ | -------------------: | ----------------------: |
+| Mean tokens/word | 1.3936 | **1.3528** |
+| Median tokens/word | 1.3333 | **1.2857** |
+| P95 tokens/word | 1.9000 | **1.8571** |
+| Bytes/token | 4.734 | **4.807** |
+| Round-trip fidelity | 0.000 | **1.000** |
+| Docs emitting `<unk>` | 4 | **0** |
+| vs BERT-base (2.6291) | — | **1.94× better** |
+| vs XLM-RoBERTa (1.8233) | — | **1.35× better** |
+
+Measured on a held-out split of **49,424 documents** excluded from v2 training
+(`benchmark_results.json`). v1 fails to reconstruct whitespace on all 49,424 of them.
+These figures are not comparable with the 1.53 published on 2026-07-07: that benchmark
+scored *lines* of the training text, and 21% of documents span several lines.
+
+Corpus totals: **6,154,594 documents · 600,085,996 words · 826M v2 subword tokens**.
 
 ```bash
 cd tokenizer
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-python prepare_corpus.py --stats   # reads data/final/final_so.jsonl
-python train.py                    # writes somali-bpe-tokenizer.json
-python test_tokenizer.py           # benchmark; use --sample-size 1668080 for full corpus
+pytest                             # property + unit tests, ~4s, no network
+python prepare_corpus.py --stats   # writes training text + eval holdout
+python train.py                    # trains at the default vocabulary size
+python benchmark.py                # scores v1 and v2 on the holdout
 ```
 
-Artifacts: `somali-bpe-tokenizer.json` (tracked), `benchmark_results.json`,
-`tokenizer_stats.json`. Methodology and full results:
+Vocabulary sweep, then promote the winner:
+
+```bash
+python train.py --vocab-size 65536 --output sweep/somali-bpe-v2-65536.json
+python train.py --sweep 16384,32000,48000 --derive-from sweep/somali-bpe-v2-65536.json
+python benchmark.py --sweep-dir sweep
+python export_hf.py sweep/somali-bpe-v2-<chosen>.json
+```
+
+Tracked artifacts: `somali-bpe-tokenizer.json` (v1), `somali-bpe-v2.json` (v2), `v2/`,
+`benchmark_results.json`, `tokenizer_stats.json`. The training text, eval holdout, and
+`sweep/` are regenerable and gitignored. Methodology and full results:
 [tokenizer/PAPER.md](tokenizer/PAPER.md).
 
 ## Quick start
 
-**Requirements:** Rust 1.75+ · ~20 GB free disk for a full build.
+**Requirements:** Rust 1.75+ · ~40 GB free disk for a full eleven-source build (NLLB is large).
 
 ```bash
 cargo build --release
@@ -252,7 +311,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 | `download_nllb_so`      | [NLLB English–Somali](https://storage.googleapis.com/allennlp-data-bucket/nllb/eng_Latn-som_Latn.gz)   | ODC-BY       |
 | `download_quran_tanzil` | [Tanzil Qur'an Somali](https://tanzil.net/trans/?transID=so.abduh) (`so.abduh`)                        | see source   |
 
-Scale estimates, overlap, and per-record licensing: [docs/SOURCES.md](docs/SOURCES.md).
+Scale, overlap, and per-record licensing: [docs/SOURCES.md](docs/SOURCES.md).
+Full eleven-source pipeline stats: [reports/runs/MEASUREMENT.md](reports/runs/MEASUREMENT.md).
 
 > **Licensing:** no single corpus license — each `CorpusRecord` carries its upstream
 > `license` field. See [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md).
@@ -296,7 +356,7 @@ Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | [docs/CLEANING_PLAN.md](docs/CLEANING_PLAN.md)         | Phase 3 cleaning, LID, and dedup specification  |
 | [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md) | v0.2 deep-clean audit and strategy              |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)           | Workspace layout and crate design               |
-| [docs/SOURCES.md](docs/SOURCES.md)                     | Source registry and scale estimates             |
+| [docs/SOURCES.md](docs/SOURCES.md)                     | Source registry and measured counts             |
 | [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md)     | Record metadata and licensing                   |
 | [PLAN.md](PLAN.md)                                     | Vision and two-track strategy                   |
 | [ROADMAP.md](ROADMAP.md)                               | Phases and milestones                           |
