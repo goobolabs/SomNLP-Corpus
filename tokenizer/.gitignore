@@ -3,9 +3,15 @@
 
 # Large intermediate corpus (regenerate with prepare_corpus.py)
 somali_raw_corpus.txt
+eval_holdout.jsonl
+
+# Vocabulary sweep candidates (regenerate with train.py --sweep)
+sweep/
 
 # Run logs
 *.log
 
 # Python cache
 __pycache__/
+.pytest_cache/
+.ruff_cache/

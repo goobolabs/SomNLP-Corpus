@@ -1,3 +1,10 @@
 tokenizers>=0.20,<0.22
 tqdm>=4.66
+
+# Benchmark-only: needed for the BERT / XLM-RoBERTa baselines in benchmark.py.
+# Training and testing do not require it.
 transformers>=4.40
+
+# Development
+pytest>=8.0
+ruff>=0.6
