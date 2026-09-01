@@ -16,6 +16,7 @@ merge_source_order = [
   "quran",
   "wikipedia",
   "xlsum",
+  "glot",
   "nllb",
 ]
 

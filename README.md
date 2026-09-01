@@ -27,21 +27,21 @@
 | Phase                   | Scope                                 | Status  |
 | ----------------------- | ------------------------------------- | ------- |
 | 1 — Foundation          | Workspace, shared types               | ✅ Done  |
-| 2 — Public datasets     | Eleven downloaders + merge            | ✅ Done  |
+| 2 — Public datasets     | Twelve downloaders + merge            | ✅ Done  |
 | 3 — Processing pipeline | Clean → LID → deep clean → near-dedup | ✅ Done  |
 | 4 — Collection          | Web scraping & targeted sources       | 🔜 Next  |
 | 5 — Release             | Hugging Face packaging                | Planned |
 
-**Track A is live:** eleven public Somali datasets merged, cleaned, and measured end-to-end.
+**Track A is live:** twelve public Somali datasets merged, cleaned, and measured end-to-end.
 
-**Current corpus (2026-08-31):** **6.15M documents** · **600M words** · 6.3 GB
+**Current corpus (2026-09-01):** **7.24M documents** · **662M words** · **906M v2 subword tokens** (~0.9B) · 7.1 GB
 (`data/final/final_so.jsonl`). **Track B next:** targeted Somali web collection.
 
 See [ROADMAP.md](ROADMAP.md) and [PLAN.md](PLAN.md).
 
 ## What we built
 
-- **Eleven downloaders** — HPLT, CC100, mC4, OPUS, MADLAD, MT560, QuranEnc, Wikipedia, XL-Sum, NLLB, Tanzil
+- **Twelve downloaders** — HPLT, CC100, mC4, OPUS, MADLAD, MT560, QuranEnc, Wikipedia, XL-Sum, NLLB, Tanzil, Glot500
 - **Five processing stages** — merge + exact dedup, clean, LID (`lingua`), deep clean (v0.2), near-dedup (MinHash + LSH)
 - **`CorpusRecord` metadata** — provenance, content hash, dedup info, quality flags on every kept line
 - **Reject sidecars** — full text + reason for every dropped record; inspect with `reports/inspect_drops.sh`
@@ -53,12 +53,12 @@ SomNLP ── SomNLP-Corpus (this repo) → Translate · NER · QA · Instruct �
 
 ## Corpus results
 
-All **eleven Track A sources** are implemented and **measured end-to-end** through the
-v0.2 pipeline (2026-08-31 run). v0.1 baseline (six sources, no deep clean): 1.77M docs
+All **twelve Track A sources** are implemented and **measured end-to-end** through the
+v0.2 pipeline (2026-09-01 run; eleven-source baseline 2026-08-31). v0.1 baseline (six sources, no deep clean): 1.77M docs
 · 591M words — see [docs/CLEANING_STRATEGY.md](docs/CLEANING_STRATEGY.md). Incremental
 measurement notes: [reports/runs/MEASUREMENT.md](reports/runs/MEASUREMENT.md).
 
-### Per-source raw scale (all eleven)
+### Per-source raw scale (all twelve)
 
 | Source | Class | Raw documents | Notes |
 | ------ | ----- | ------------: | ----- |
@@ -71,62 +71,65 @@ measurement notes: [reports/runs/MEASUREMENT.md](reports/runs/MEASUREMENT.md).
 | Wikipedia | document | 9,021 | measured download |
 | XL-Sum | document | 7,452 | measured download (train + val + test) |
 | NLLB en–so | sentence | 10,229,073 | measured download; official AllenAI export |
+| Glot500 (`som_Latn`) | document | 3,915,898 | measured download; HF `cis-lmu/Glot500` |
 | QuranEnc (Yacob Yusuf) | sentence | 7,373 | 6,236 verses + 1,137 footnotes (measured) |
 | Tanzil (Abduh) | sentence | 6,236 | 6,236 ayahs only (no footnotes upstream) |
 | **Qur'an subtotal** | | **13,609** | two translations, counted separately |
-| **Total (all eleven)** | | **12,892,436** | NLLB dominates raw row count |
+| **Total (all twelve)** | | **16,808,334** | NLLB + Glot500 dominate raw row count |
 
-### Measured — full Track A (eleven sources, 2026-08-31)
+### Measured — full Track A (twelve sources, 2026-09-01)
 
-| Stage            |     Documents |           Words |    Tokens | Removed this stage |
-| ---------------- | ------------: | --------------: | --------: | -----------------: |
-| Downloaded (raw) |    12,892,436 |               — |         — |                  — |
-| Merged           |     7,087,172 |               — |         — |          5,805,264 |
-| Cleaned          |     6,716,987 |               — |         — |            370,185 |
-| LID verified     |     6,526,208 |               — |         — |            190,779 |
-| Deep cleaned     |     6,493,085 |               — |         — |             33,123 |
-| **Final**        | **6,154,601** | **600,085,996** | see tokenizer |            338,484 |
+| Stage            |     Documents |           Words |           Tokens | Removed this stage |
+| ---------------- | ------------: | --------------: | -------------: | -----------------: |
+| Downloaded (raw) |    16,808,334 |               — |              — |                  — |
+| Merged           |    10,591,536 |               — |              — |          6,216,798 |
+| Cleaned          |     7,965,172 |               — |              — |          2,626,364 |
+| LID verified     |     7,680,028 |               — |              — |            285,144 |
+| Deep cleaned     |     7,645,731 |               — |              — |             34,297 |
+| **Final**        | **7,243,852** | **661,521,656** | **906,236,553** |            401,879 |
 
-**Overall (measured):** 12.9M raw rows → **6.15M clean documents** · **600M words**.
-Output: `data/final/final_so.jsonl` (~6.3 GB). Subword token count is produced by the
-[tokenizer pipeline](#tokenizer) (re-run after corpus updates). NLLB contributed 10.2M
-raw parallel sentences; 53.8% were within-source duplicates at merge, leaving 4.73M
-unique rows (4.46M survive to final).
+**Overall (measured):** 16.8M raw rows → **7.24M clean documents** · **662M words** ·
+**906M v2 subword tokens** (~0.9B). Output: `data/final/final_so.jsonl` (7.1 GB).
+Glot500 added 3.9M raw documents; 58.5% were dropped at clean (mostly below the 25-word
+document minimum), leaving 1.44M in the final corpus (~20%). NLLB still dominates raw volume;
+857k NLLB rows were cross-source duplicates of Glot500 at merge.
 
 ### Per-source contribution (final documents)
 
 | Source | Raw | Kept at merge | Final | Share of final |
 | ------ | --: | ------------: | ----: | -------------: |
-| NLLB | 10,229,073 | 4,727,602 | 4,463,021 | 72.5% |
-| mC4 | 893,012 | 892,852 | 595,193 | 9.7% |
-| HPLT | 966,507 | 798,364 | 576,995 | 9.4% |
-| CC100 | 396,524 | 374,721 | 300,664 | 4.9% |
-| MADLAD | 200,494 | 200,484 | 133,410 | 2.2% |
-| MT560 | 161,865 | 51,083 | 49,195 | 0.8% |
+| NLLB | 10,229,073 | 4,376,011 | 4,111,385 | 56.8% |
+| Glot500 | 3,915,898 | 3,855,955 | 1,442,974 | 19.9% |
+| mC4 | 893,012 | 892,852 | 594,847 | 8.2% |
+| HPLT | 966,507 | 798,364 | 576,816 | 8.0% |
+| CC100 | 396,524 | 374,721 | 299,148 | 4.1% |
+| MADLAD | 200,494 | 200,484 | 133,403 | 1.8% |
+| MT560 | 161,865 | 51,083 | 49,195 | 0.7% |
 | OPUS | 14,879 | 12,296 | 12,126 | 0.2% |
 | QuranEnc | 7,373 | 7,277 | 7,072 | 0.1% |
-| XL-Sum | 7,452 | 7,451 | 5,649 | 0.1% |
-| Wikipedia | 9,021 | 8,994 | 5,503 | 0.1% |
+| XL-Sum | 7,452 | 7,451 | 5,646 | 0.1% |
+| Wikipedia | 9,021 | 8,994 | 5,467 | 0.1% |
 | Tanzil | 6,236 | 6,048 | 5,773 | 0.1% |
-| **Total** | **12,892,436** | **7,087,172** | **6,154,601** | 100% |
+| **Total** | **16,808,334** | **10,591,536** | **7,243,852** | 100% |
 
-NLLB dominates both raw volume and final size. Web crawls (HPLT, mC4, CC100, MADLAD)
-lose most documents to near-dedup and LID; sentence-class sources pass through unchanged.
+NLLB still leads final size, but Glot500 is now the second-largest contributor. Web crawls
+(HPLT, mC4, CC100, MADLAD, Glot500) lose documents to clean, LID, and near-dedup;
+sentence-class sources pass through unchanged.
 
-### What cleaning removed (eleven-source run)
+### What cleaning removed (twelve-source run)
 
 | Stage      | Removed | Share of stage input | Main reason                                                        |
 | ---------- | ------: | -------------------: | ------------------------------------------------------------------ |
-| Merge      | 5,805,264 |                45.0% | Within-source dupes (NLLB 53.8%; MT560 ~68%)                      |
-| Clean      |   370,185 |                 5.2% | Too short (&lt;25 words docs / &lt;5 words sentences) or corrupted |
-| LID        |   190,779 |                 2.8% | Non-Somali on document-class sources                               |
-| Deep clean |    33,123 |                 0.5% | Boilerplate, segment LID, too long                                 |
-| Near dedup |   338,484 |                 5.2% | Near-duplicate web documents                                       |
+| Merge      | 6,216,798 |                37.0% | Within-source dupes (NLLB 48.8%; MT560 ~68%); Glot–NLLB cross-source overlap |
+| Clean      | 2,626,364 |                24.8% | Too short (&lt;25 words docs / &lt;5 words sentences) or corrupted; Glot500 58.5% |
+| LID        |   285,144 |                 3.6% | Non-Somali on document-class sources                               |
+| Deep clean |    34,297 |                 0.4% | Boilerplate, segment LID, too long                                 |
+| Near dedup |   401,879 |                 5.3% | Near-duplicate web documents                                       |
 
-**52.2%** of raw documents did not survive the eleven-source pipeline (mostly NLLB
-within-source dedup at merge). Sentence-class sources (NLLB, OPUS, MT560, QuranEnc,
-Tanzil) skip near-dedup and LID gating. Re-run locally to reproduce; numbers shift
-slightly with upstream dataset versions.
+**56.9%** of raw documents did not survive the twelve-source pipeline (merge dedup plus
+Glot500's short-document filter at clean). Sentence-class sources (NLLB, OPUS, MT560,
+QuranEnc, Tanzil) skip near-dedup and LID gating. Re-run locally to reproduce; numbers
+shift slightly with upstream dataset versions.
 
 ## Pipeline
 
@@ -147,7 +150,7 @@ raw/       merged/              cleaned/  lid/   deep_clean/  final/
 
 | Source class | Sources                                     | Min words | LID                  | Near dedup    |
 | ------------ | ------------------------------------------- | --------: | -------------------- | ------------- |
-| Document     | HPLT, CC100, mC4, MADLAD, Wikipedia, XL-Sum |        25 | `lingua` gate @ 0.50 | MinHash + LSH |
+| Document     | HPLT, CC100, mC4, MADLAD, Wikipedia, XL-Sum, Glot500 |        25 | `lingua` gate @ 0.50 | MinHash + LSH |
 | Sentence     | OPUS, MT560, QuranEnc, NLLB, Tanzil         |         5 | tag-only             | exact only    |
 
 Full commands and drop inspection: [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md) ·
@@ -210,7 +213,38 @@ Measured on a held-out split of **49,424 documents** excluded from v2 training
 These figures are not comparable with the 1.53 published on 2026-07-07: that benchmark
 scored *lines* of the training text, and 21% of documents span several lines.
 
-Corpus totals: **6,154,594 documents · 600,085,996 words · 826M v2 subword tokens**.
+### Vocabulary and ratios
+
+**Vocabulary** is the fixed list of subword pieces the model can emit — not Somali words,
+but learned fragments (bytes, syllables, common words, special tokens). v2 ships **48,000**
+types (`somali-bpe-v2.json`). BPE training starts from 256 bytes and repeatedly merges
+the most frequent adjacent pairs until the list reaches the target size.
+
+**48k was chosen from a measured sweep**, not assumed:
+
+| Vocabulary | Mean tokens/word |
+| ---------: | ----------------: |
+| 16,384 | 1.52 |
+| 32,000 | 1.41 |
+| **48,000** | **1.35** |
+| 65,536 | 1.32 |
+
+Returns diminish after 48k (65k saves only 2.5% more tokens for ~36% more embedding
+parameters). 48k beats v1 on every metric while keeping embedding cost reasonable. Full
+sweep: [tokenizer/PAPER.md](tokenizer/PAPER.md) §6.3.
+
+**Tokens/word** is the primary efficiency ratio: subword token count divided by
+whitespace-delimited word count. Lower is better — each Somali word costs fewer context
+window slots. Example: eight words tokenized into nine pieces → 9 ÷ 8 = **1.125**
+tokens/word for that sentence; the corpus mean is ~**1.35** on the holdout, ~**1.37** on
+the full twelve-source release. **Median** and **P95** in the table above show the typical
+document and the hard tail (long compounds, names, punctuation). **Bytes/token** measures
+how much raw text each token carries on average.
+
+Corpus totals (twelve-source, measured 2026-09-01): **7,243,852 documents ·
+661,521,656 words · 906,236,553 v2 subword tokens** (~0.9B; mean 1.37 tokens/word on the
+full corpus). Benchmark metrics above remain from the eleven-source holdout until v2 is
+re-trained on the updated corpus.
 
 ```bash
 cd tokenizer
@@ -239,7 +273,7 @@ Tracked artifacts: `somali-bpe-tokenizer.json` (v1), `somali-bpe-v2.json` (v2), 
 
 ## Quick start
 
-**Requirements:** Rust 1.75+ · ~40 GB free disk for a full eleven-source build (NLLB is large).
+**Requirements:** Rust 1.75+ · ~45 GB free disk for a full twelve-source build (NLLB + Glot500 are large).
 
 ```bash
 cargo build --release
@@ -265,6 +299,7 @@ cargo build --release
 ./target/release/download_wikipedia_so
 ./target/release/download_xlsum_so
 ./target/release/download_nllb_so
+./target/release/download_glot_so
 ./target/release/download_quran_tanzil
 
 ./target/release/run_pipeline --config configs/pipeline.toml
@@ -309,10 +344,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 | `download_wikipedia_so` | [Somali Wikipedia](https://huggingface.co/datasets/wikimedia/wikipedia) (`20231101.so`)                | CC-BY-SA-4.0 |
 | `download_xlsum_so`     | [XL-Sum Somali](https://huggingface.co/datasets/csebuetnlp/xlsum) (`somali`)                           | CC-BY-4.0    |
 | `download_nllb_so`      | [NLLB English–Somali](https://storage.googleapis.com/allennlp-data-bucket/nllb/eng_Latn-som_Latn.gz)   | ODC-BY       |
+| `download_glot_so`      | [Glot500 Somali](https://huggingface.co/datasets/cis-lmu/Glot500) (`som_Latn`)                         | see source   |
 | `download_quran_tanzil` | [Tanzil Qur'an Somali](https://tanzil.net/trans/?transID=so.abduh) (`so.abduh`)                        | see source   |
 
 Scale, overlap, and per-record licensing: [docs/SOURCES.md](docs/SOURCES.md).
-Full eleven-source pipeline stats: [reports/runs/MEASUREMENT.md](reports/runs/MEASUREMENT.md).
+Full twelve-source pipeline stats: [reports/runs/MEASUREMENT.md](reports/runs/MEASUREMENT.md).
 
 > **Licensing:** no single corpus license — each `CorpusRecord` carries its upstream
 > `license` field. See [docs/METADATA_SCHEMA.md](docs/METADATA_SCHEMA.md).

@@ -58,6 +58,10 @@ path = "src/bin/download_quran_tanzil.rs"
 name = "download_nllb_so"
 path = "src/bin/download_nllb_so.rs"
 
+[[bin]]
+name = "download_glot_so"
+path = "src/bin/download_glot_so.rs"
+
 [dependencies]
 common = { path = "../common" }
 anyhow = { workspace = true }
