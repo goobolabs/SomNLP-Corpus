@@ -62,6 +62,10 @@ path = "src/bin/download_nllb_so.rs"
 name = "download_glot500_so"
 path = "src/bin/download_glot500_so.rs"
 
+[[bin]]
+name = "download_somali_web_corpus_so"
+path = "src/bin/download_somali_web_corpus_so.rs"
+
 [dependencies]
 common = { path = "../common" }
 anyhow = { workspace = true }

@@ -32,6 +32,12 @@ pub struct HfClient {
     token: Option<String>,
 }
 
+impl Default for HfClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HfClient {
     pub fn new() -> Self {
         Self {
@@ -73,7 +79,9 @@ impl HfClient {
             request = request.bearer_auth(token);
         }
 
-        let response = request.send().context("listing Hugging Face dataset files")?;
+        let response = request
+            .send()
+            .context("listing Hugging Face dataset files")?;
         if response.status() == reqwest::StatusCode::NOT_FOUND {
             bail!("dataset path not found: {repo}@{revision}/{prefix}");
         }
@@ -97,7 +105,12 @@ impl HfClient {
             .collect())
     }
 
-    pub fn download_to_path(&self, repo: &str, remote_path: &str, destination: &Path) -> Result<()> {
+    pub fn download_to_path(
+        &self,
+        repo: &str,
+        remote_path: &str,
+        destination: &Path,
+    ) -> Result<()> {
         self.download_to_path_at(repo, MAIN_REVISION, remote_path, destination)
     }
 
@@ -110,7 +123,8 @@ impl HfClient {
         destination: &Path,
     ) -> Result<()> {
         let revision = encode_revision(revision);
-        let url = format!("https://huggingface.co/datasets/{repo}/resolve/{revision}/{remote_path}");
+        let url =
+            format!("https://huggingface.co/datasets/{repo}/resolve/{revision}/{remote_path}");
         let mut request = self.client.get(&url);
         if let Some(token) = &self.token {
             request = request.bearer_auth(token);
@@ -191,7 +205,10 @@ mod tests {
 
     #[test]
     fn encodes_slashes_in_refs() {
-        assert_eq!(encode_revision("refs/convert/parquet"), "refs%2Fconvert%2Fparquet");
+        assert_eq!(
+            encode_revision("refs/convert/parquet"),
+            "refs%2Fconvert%2Fparquet"
+        );
     }
 
     #[test]

@@ -29,6 +29,7 @@ fn resolve_local_shard(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn export_parquet_shards(
     hf: &HfClient,
     repo: &str,
@@ -54,8 +55,7 @@ pub fn export_parquet_shards(
             break;
         }
 
-        let local_path =
-            resolve_local_shard(hf, repo, remote_path, output, streaming, &mut temps)?;
+        let local_path = resolve_local_shard(hf, repo, remote_path, output, streaming, &mut temps)?;
 
         for text in crate::parquet_source::iter_text_column(&local_path, column)? {
             if limit.is_some_and(|limit| written >= limit) {
@@ -85,6 +85,7 @@ pub fn export_parquet_shards(
     Ok(stats)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn export_parquet_struct_shards(
     hf: &HfClient,
     repo: &str,
@@ -110,8 +111,7 @@ pub fn export_parquet_struct_shards(
             break;
         }
 
-        let local_path =
-            resolve_local_shard(hf, repo, remote_path, output, streaming, &mut temps)?;
+        let local_path = resolve_local_shard(hf, repo, remote_path, output, streaming, &mut temps)?;
 
         for text in crate::parquet_source::iter_struct_field(&local_path, column, field)? {
             if limit.is_some_and(|limit| written >= limit) {
@@ -138,6 +138,7 @@ pub fn export_parquet_struct_shards(
     Ok(stats)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn export_json_gz_shards(
     hf: &HfClient,
     repo: &str,
@@ -161,8 +162,7 @@ pub fn export_json_gz_shards(
             break;
         }
 
-        let local_path =
-            resolve_local_shard(hf, repo, remote_path, output, streaming, &mut temps)?;
+        let local_path = resolve_local_shard(hf, repo, remote_path, output, streaming, &mut temps)?;
 
         for text in crate::parquet_source::iter_json_gz_text(&local_path)? {
             if limit.is_some_and(|limit| written >= limit) {

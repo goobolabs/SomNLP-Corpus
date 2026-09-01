@@ -1,6 +1,7 @@
 pub mod cc100;
 pub mod cli;
 pub mod export;
+pub mod glot;
 pub mod glot500;
 pub mod hf;
 pub mod jsonl;
@@ -12,6 +13,7 @@ pub mod normalize;
 pub mod parquet_source;
 pub mod quran;
 pub mod raw_paths;
+pub mod somali_web_corpus;
 pub mod stats;
 pub mod tanzil;
 pub mod wikipedia;
