@@ -23,6 +23,7 @@ See also: [METADATA_SCHEMA.md](METADATA_SCHEMA.md), [PLAN.md](../PLAN.md).
 | `wikipedia` | Somali Wikipedia | encyclopedia | A | 9,021 articles (measured) | CC-BY-SA-4.0 | `download_wikipedia_so` | done | HF `wikimedia/wikipedia` dataset (`20231101.so`) |
 | `xlsum` | XL-Sum Somali | news / summary | A | 7,452 articles (measured) | CC-BY-4.0 | `download_xlsum_so` | done | `csebuetnlp/xlsum` (`somali` config) |
 | `nllb` | NLLB English–Somali | parallel text | A | 10.2M pairs raw · 4.7M kept at merge | ODC-BY | `download_nllb_so` | done | Official Meta/AllenAI NLLB TSV export |
+| `glot` | Glot500 Somali (`som_Latn`) | web crawl / aggregated | A | ~3.9M docs (HF train) | see source | `download_glot_so` | done | HF `cis-lmu/Glot500` parquet export |
 | `tanzil` | Tanzil Qur'an Somali (Abduh) | religious | A | 6,236 ayahs | see source | `download_quran_tanzil` | done | Separate translation from QuranEnc; no footnotes upstream |
 
 ### Track A licensing note
@@ -136,6 +137,13 @@ Incremental measurement notes: [reports/runs/MEASUREMENT.md](../reports/runs/MEA
 - **Access:** Hugging Face parquet auto-converted revision (`PARQUET_REVISION`)
 - **Output:** `data/raw/xlsum/xlsum_so.jsonl`
 - **License:** CC-BY-4.0
+
+### `glot`
+
+- **Upstream:** [cis-lmu/Glot500](https://huggingface.co/datasets/cis-lmu/Glot500) config `som_Latn`
+- **Access:** Hugging Face parquet export (`refs/convert/parquet`); train split
+- **Output:** `data/raw/glot/glot_so.jsonl`
+- **License:** see upstream Glot500 dataset card
 
 ### `nllb`
 
