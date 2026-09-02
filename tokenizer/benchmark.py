@@ -186,7 +186,12 @@ def load_tokenizers(args: argparse.Namespace) -> list[tuple[str, Tokenizer]]:
 
     if args.sweep_dir:
         sweep_dir = resolve_under_repo(args.repo_root, args.sweep_dir)
-        for path in sorted(sweep_dir.glob("somali-bpe-v2-*.json")):
+        if not sweep_dir.is_dir():
+            fail(f"Sweep directory not found: {sweep_dir}")
+        candidates = sorted(sweep_dir.glob("somali-bpe-v2-*.json"))
+        if not candidates:
+            fail(f"No somali-bpe-v2-*.json candidates in {sweep_dir}")
+        for path in candidates:
             specs.append((path.stem.replace("somali-bpe-", ""), path))
 
     loaded: list[tuple[str, Tokenizer]] = []

@@ -59,6 +59,11 @@ def parse_args() -> argparse.Namespace:
         help="Output tokenizer JSON path (single-size runs only)",
     )
     parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite --output when it already exists (single-size runs only)",
+    )
+    parser.add_argument(
         "--vocab-size",
         type=int,
         default=DEFAULT_VOCAB_SIZE,
@@ -290,6 +295,13 @@ def main() -> None:
             output_path = sweep_dir / f"somali-bpe-v2-{vocab_size}.json"
         else:
             output_path = resolve_under_repo(args.repo_root, args.output)
+            # --output defaults to the shipped release artifact, so a smoke-test run at a
+            # small vocabulary would otherwise silently replace it.
+            if output_path.exists() and not args.force:
+                fail(
+                    f"{output_path} already exists. Pass --force to replace it, or "
+                    "--output/--sweep to write elsewhere."
+                )
         if derive_source:
             derive_tokenizer(derive_source, vocab_size, output_path)
         else:

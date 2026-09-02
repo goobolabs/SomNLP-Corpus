@@ -185,15 +185,19 @@ The repository includes two trained tokenizer artifacts:
 
 | Metric | v1 (32k) | **v2 (48k)** |
 | ------ | --------: | -----------: |
-| Mean tokens/word | 1.3936 | **1.3528** |
-| P95 tokens/word | 1.9000 | **1.8571** |
-| Bytes/token | 4.734 | **4.807** |
+| Mean tokens/word | 1.3885 | **1.3468** |
+| P95 tokens/word | 1.9091 | **1.8462** |
+| Bytes/token | 4.738 | **4.820** |
 | Round-trip fidelity | 0.000 | **1.000** |
 | Documents emitting `<unk>` | 4 | **0** |
 
-The benchmark used 49,424 held-out documents from the earlier 11-source corpus. The
-912M-token release total was measured on the 13-source corpus with v2 (2026-09-02); it is
-not a retrained 13-source benchmark.
+Scored on 59,029 held-out documents from the 13-source corpus, against 1.8158 for
+XLM-RoBERTa-base and 2.6336 for BERT-base on the same text. v2's vocabulary was trained on
+the earlier 11-source corpus; the two sources added since — Glot500 and Somali Web Corpus —
+tokenize at 1.3370 and 1.2472, better than the holdout mean, so it was not retrained.
+
+The 911,824,557-token release total comes from `tokenize_corpus.py`, which encodes every
+document in the corpus rather than extrapolating from the holdout ratio.
 
 To run the tokenizer tests and reproduce its preparation, training, and benchmark steps:
 
@@ -207,6 +211,7 @@ pytest
 python prepare_corpus.py --stats
 python train.py
 python benchmark.py
+python tokenize_corpus.py
 ```
 
 The training corpus and evaluation split are generated locally and ignored by Git. See

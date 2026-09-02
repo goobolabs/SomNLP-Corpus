@@ -76,10 +76,12 @@ collection adds fresher, higher-quality, domain-specific text that public dumps 
 | NLLB en–so | 10.2M parallel sentences raw · 4.7M kept at merge |
 | QuranEnc (Yacob Yusuf) | ~7.4K rows (6,236 verses + 1,137 footnotes) |
 | Tanzil (Abduh) | ~6.2K ayahs (no footnotes) |
+| Glot500 | 3.9M rows raw · 3.84M kept at merge |
+| Somali Web Corpus | 217,528 rows raw · 121,777 final documents |
 
-All eleven downloaders are implemented. After cross-source dedup and quality filtering,
-full Track A measured **6.15M final documents · 600M words** (2026-08-31 run — see
-[README.md](README.md)).
+All thirteen downloaders are implemented. After cross-source dedup and quality filtering,
+full Track A measured **7.35M final documents · 666M words · 912M v2 subword tokens**
+(2026-09-02 run — see [README.md](README.md)).
 
 ### Track B — collected sources (estimates)
 
