@@ -59,8 +59,8 @@ name = "download_nllb_so"
 path = "src/bin/download_nllb_so.rs"
 
 [[bin]]
-name = "download_glot500_so"
-path = "src/bin/download_glot500_so.rs"
+name = "download_glot_so"
+path = "src/bin/download_glot_so.rs"
 
 [[bin]]
 name = "download_somali_web_corpus_so"

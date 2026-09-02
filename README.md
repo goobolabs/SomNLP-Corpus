@@ -15,11 +15,11 @@ contains a corpus-trained ByteLevel BPE tokenizer.
 
 ## Current release
 
-The latest measured build completed on **2026-09-01** and combines **12 public sources**:
+The latest measured build completed on **2026-09-02** and combines **13 public sources**:
 
 | Final documents | Words | v2 subword tokens | JSONL size |
 | --------------: | ----: | ----------------: | ---------: |
-| 7,243,852 | 661,521,656 | 906,236,553 | 7.1 GB |
+| 7,352,961 | 665,985,672 | 911,824,557 | 7.2 GB |
 
 The release artifact is `data/final/final_so.jsonl`. Corpus data is not stored in Git;
 build it with the pipeline below. Trained tokenizer artifacts and their benchmark summary
@@ -32,7 +32,7 @@ milestones and [CHANGELOG.md](CHANGELOG.md) for project history.
 ## What is included
 
 - Downloaders for HPLT, CC100, mC4, OPUS, MADLAD, MT560, QuranEnc, Tanzil,
-  Wikipedia, XL-Sum, NLLB, and Glot500
+  Wikipedia, XL-Sum, NLLB, Glot500, and Somali Web Corpus
 - Streaming merge and exact deduplication
 - Text normalization, language identification, source-aware deep cleaning, and
   MinHash/LSH near-deduplication
@@ -52,15 +52,16 @@ raw/       merged/              cleaned/  lid/   deep_clean/  final/
 
 | Stage | Documents | Removed at stage |
 | ----- | --------: | ---------------: |
-| Downloaded | 16,808,334 | — |
-| Merged | 10,591,536 | 6,216,798 |
-| Cleaned | 7,965,172 | 2,626,364 |
-| LID verified | 7,680,028 | 285,144 |
-| Deep cleaned | 7,645,731 | 34,297 |
-| **Final** | **7,243,852** | **401,879** |
+| Downloaded | 17,025,862 | — |
+| Merged | 10,790,439 | 6,235,423 |
+| Cleaned | 8,104,479 | 2,685,960 |
+| LID verified | 7,791,520 | 312,959 |
+| Deep cleaned | 7,757,223 | 34,297 |
+| **Final** | **7,352,961** | **404,262** |
 
-These figures describe the 2026-09-01 run and may change when upstream datasets change.
-Each local run writes detailed stage statistics under `reports/`.
+These figures describe the 2026-09-02 run (13 sources) and may change when upstream
+datasets change. Run 12 (twelve sources, 2026-09-01): 7.24M final · 662M words · 906M
+tokens. Each local run writes detailed stage statistics under `reports/`.
 
 Document-class sources use a 25-word minimum, Somali language-ID gating, and near
 deduplication. Sentence-class sources use a 5-word minimum and exact deduplication; their
@@ -97,7 +98,7 @@ build if you want a clean run.
 
 ### Build the full corpus
 
-Run the 12 downloaders:
+Run the 13 downloaders:
 
 ```bash
 ./target/release/download_hplt_so
@@ -112,6 +113,7 @@ Run the 12 downloaders:
 ./target/release/download_xlsum_so
 ./target/release/download_nllb_so
 ./target/release/download_glot_so
+./target/release/download_somali_web_corpus_so
 ```
 
 Then run every processing stage:
@@ -132,6 +134,7 @@ streaming, but the largest stages still require substantial disk space and runti
 | mC4 Somali | document | ODC-BY |
 | MADLAD-400 Somali | document | ODC-BY |
 | Glot500 (`som_Latn`) | document | source-specific |
+| Somali Web Corpus V1 | document | MIT |
 | Somali Wikipedia | document | CC-BY-SA-4.0 |
 | XL-Sum Somali | document | CC-BY-4.0 |
 | OPUS ParaCrawl (`en-so`) | sentence | CC0-1.0 |
@@ -189,8 +192,8 @@ The repository includes two trained tokenizer artifacts:
 | Documents emitting `<unk>` | 4 | **0** |
 
 The benchmark used 49,424 held-out documents from the earlier 11-source corpus. The
-906M-token release total was measured separately on the 12-source corpus with v2; it is
-not a retrained 12-source benchmark.
+912M-token release total was measured on the 13-source corpus with v2 (2026-09-02); it is
+not a retrained 13-source benchmark.
 
 To run the tokenizer tests and reproduce its preparation, training, and benchmark steps:
 

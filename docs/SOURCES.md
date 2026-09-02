@@ -24,6 +24,7 @@ See also: [METADATA_SCHEMA.md](METADATA_SCHEMA.md), [PLAN.md](../PLAN.md).
 | `xlsum` | XL-Sum Somali | news / summary | A | 7,452 articles (measured) | CC-BY-4.0 | `download_xlsum_so` | done | `csebuetnlp/xlsum` (`somali` config) |
 | `nllb` | NLLB English–Somali | parallel text | A | 10.2M pairs raw · 4.7M kept at merge | ODC-BY | `download_nllb_so` | done | Official Meta/AllenAI NLLB TSV export |
 | `glot` | Glot500 Somali (`som_Latn`) | web crawl / aggregated | A | ~3.9M docs (HF train) | see source | `download_glot_so` | done | HF `cis-lmu/Glot500` parquet export |
+| `somali-web-corpus` | Somali Web Corpus V1 | web crawl | A | ~218K docs (HF train) | MIT | `download_somali_web_corpus_so` | done | HF `maanka2/somali-web-corpus` parquet export |
 | `tanzil` | Tanzil Qur'an Somali (Abduh) | religious | A | 6,236 ayahs | see source | `download_quran_tanzil` | done | Separate translation from QuranEnc; no footnotes upstream |
 
 ### Track A licensing note
@@ -34,10 +35,10 @@ from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 
 ### Track A outlook
 
-Eleven public sources total **12.9M raw documents** (NLLB dominates). After merge,
-LID, deep clean, and near-dedup, the full Track A corpus measured **6.15M final
-documents · 600M words** (2026-08-31 run — see [README.md](../README.md)).
-Incremental measurement notes: [reports/runs/MEASUREMENT.md](../reports/runs/MEASUREMENT.md).
+Eleven public sources total **12.9M raw documents** (NLLB dominates). The full
+thirteen-source Track A corpus measured **7.35M final documents · 666M words · 912M v2
+tokens** (2026-09-02 run — see [README.md](../README.md)). Incremental measurement
+notes: [reports/runs/MEASUREMENT.md](../reports/runs/MEASUREMENT.md).
 
 ### Measured final documents (2026-08-31)
 
@@ -144,6 +145,13 @@ Incremental measurement notes: [reports/runs/MEASUREMENT.md](../reports/runs/MEA
 - **Access:** Hugging Face parquet export (`refs/convert/parquet`); train split
 - **Output:** `data/raw/glot/glot_so.jsonl`
 - **License:** see upstream Glot500 dataset card
+
+### `somali-web-corpus`
+
+- **Upstream:** [maanka2/somali-web-corpus](https://huggingface.co/datasets/maanka2/somali-web-corpus) config `default`
+- **Access:** Hugging Face parquet export (`refs/convert/parquet`); train split (~218K rows)
+- **Output:** `data/raw/somali-web-corpus/somali-web-corpus_so.jsonl`
+- **License:** MIT
 
 ### `nllb`
 

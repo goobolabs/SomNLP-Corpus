@@ -131,6 +131,13 @@ pub const SOURCES: &[SourceEntry] = &[
         license_id: "Other",
     },
     SourceEntry {
+        key: "somali-web-corpus",
+        class: SourceClass::Document,
+        lid_policy: LidPolicy::Gate,
+        near_dedup: true,
+        license_id: "MIT",
+    },
+    SourceEntry {
         key: "tanzil",
         class: SourceClass::Sentence,
         lid_policy: LidPolicy::TagOnly,
@@ -169,6 +176,7 @@ mod tests {
             "xlsum",
             "nllb",
             "glot",
+            "somali-web-corpus",
             "tanzil",
             "quran-tanzil",
         ] {
