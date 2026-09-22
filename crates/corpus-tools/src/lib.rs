@@ -12,6 +12,7 @@ pub mod normalize;
 pub mod parquet_source;
 pub mod quran;
 pub mod raw_paths;
+pub mod somali_tinystories;
 pub mod somali_web_corpus;
 pub mod stats;
 pub mod tanzil;
