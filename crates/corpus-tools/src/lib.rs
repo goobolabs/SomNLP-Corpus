@@ -1,6 +1,7 @@
 pub mod cc100;
 pub mod cli;
 pub mod export;
+pub mod finepdfs;
 pub mod glot;
 pub mod hf;
 pub mod jsonl;

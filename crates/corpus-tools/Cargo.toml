@@ -70,6 +70,10 @@ path = "src/bin/download_somali_tinystories_so.rs"
 name = "download_somali_web_corpus_so"
 path = "src/bin/download_somali_web_corpus_so.rs"
 
+[[bin]]
+name = "download_finepdfs_so"
+path = "src/bin/download_finepdfs_so.rs"
+
 [dependencies]
 common = { path = "../common" }
 anyhow = { workspace = true }
