@@ -7,9 +7,9 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Parser;
-use common::types::QualityFlag;
+use common::types::{CorpusRecord, QualityFlag};
 use corpus_pipeline::config::PipelineConfig;
-use corpus_pipeline::io::{read_corpus, write_report, JsonlSink, RejectWriter};
+use corpus_pipeline::io::{par_map_jsonl, to_line, write_report, JsonlSink, RejectWriter};
 use corpus_pipeline::lid::{self, stage};
 use corpus_pipeline::progress::{count_jsonl_lines, RecordProgress};
 use corpus_pipeline::report::{
@@ -100,28 +100,30 @@ fn main() -> Result<()> {
         total,
     );
 
-    for record in read_corpus(&args.input)? {
-        if args.limit.is_some_and(|limit| report.input_docs >= limit) {
-            break;
-        }
-        let mut record = record?;
-        report.input_docs += 1;
-        progress.inc();
-
-        let source = record.provenance.source.0.clone();
-        *report.per_source_input.entry(source.clone()).or_insert(0) += 1;
-
+    // Detection and serialization run on the rayon pool; stats and writes stay
+    // sequential, in input order.
+    let detect = |mut record: CorpusRecord| {
         stage::apply_lid(
             &mut record,
             detector.as_ref(),
             config.lid.min_confidence,
             config.lid.detect_clip_bytes,
         );
+        let line = to_line(&record)?;
+        Ok((record, line))
+    };
+    par_map_jsonl(&args.input, args.limit, detect, |detected: Result<_>| {
+        let (record, line): (CorpusRecord, String) = detected?;
+        report.input_docs += 1;
+        progress.inc();
+
+        let source = record.provenance.source.0.clone();
+        *report.per_source_input.entry(source.clone()).or_insert(0) += 1;
 
         if stage::is_kept(&record) {
             *report.per_source_kept.entry(source).or_insert(0) += 1;
             report.output_docs += 1;
-            output.write(&record)?;
+            output.write_line(&line)?;
         } else {
             let reason = if record.quality.flags.contains(&QualityFlag::NotSomali) {
                 "not_somali".to_string()
@@ -138,9 +140,10 @@ fn main() -> Result<()> {
             *report.dropped_lang_counts.entry(lang).or_insert(0) += 1;
             *report.per_source_rejected.entry(source).or_insert(0) += 1;
             report.rejected_docs += 1;
-            rejects.write(&record)?;
+            rejects.write_line(&line)?;
         }
-    }
+        Ok(())
+    })?;
 
     report.drop_rate = if report.input_docs == 0 {
         0.0

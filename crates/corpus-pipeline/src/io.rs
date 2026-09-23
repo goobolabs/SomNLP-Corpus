@@ -34,6 +34,86 @@ pub fn read_jsonl<T: DeserializeOwned>(
     }))
 }
 
+/// Records per batch handed to the rayon pool by [`par_map_jsonl`].
+pub const PAR_BATCH: usize = 16_384;
+
+/// Parallel counterpart of a `read_jsonl` + per-record loop. Reads up to `limit`
+/// non-blank lines in batches; each batch is parsed and passed through `map` on the
+/// rayon pool, then every result goes to `sink` sequentially in input order. A
+/// producer thread prepares the next batch while `sink` drains the current one. As
+/// long as `map` is a pure per-record function, output is identical to the serial loop.
+pub fn par_map_jsonl<T, U, M, S>(path: &Path, limit: Option<u64>, map: M, mut sink: S) -> Result<()>
+where
+    T: DeserializeOwned,
+    U: Send,
+    M: Fn(T) -> U + Sync,
+    S: FnMut(U) -> Result<()>,
+{
+    use rayon::prelude::*;
+    use std::sync::mpsc::sync_channel;
+
+    let file = File::open(path).with_context(|| format!("opening {}", path.display()))?;
+    let mut lines = BufReader::new(file).lines().enumerate();
+    let map = &map;
+
+    std::thread::scope(|scope| {
+        let (tx, rx) = sync_channel::<Result<Vec<Result<U>>>>(2);
+        scope.spawn(move || {
+            let mut taken = 0u64;
+            loop {
+                let mut batch: Vec<(usize, String)> = Vec::with_capacity(PAR_BATCH);
+                while batch.len() < PAR_BATCH && !limit.is_some_and(|limit| taken >= limit) {
+                    let Some((index, line)) = lines.next() else {
+                        break;
+                    };
+                    let raw = match line {
+                        Ok(raw) => raw,
+                        Err(error) => {
+                            let _ = tx.send(Err(error.into()));
+                            return;
+                        }
+                    };
+                    if raw.trim().is_empty() {
+                        continue;
+                    }
+                    batch.push((index, raw));
+                    taken += 1;
+                }
+                if batch.is_empty() {
+                    return;
+                }
+
+                let results: Vec<Result<U>> = batch
+                    .into_par_iter()
+                    .map(|(index, raw)| {
+                        let parsed = serde_json::from_str::<T>(&raw).with_context(|| {
+                            format!("invalid JSON on line {} of {}", index + 1, path.display())
+                        })?;
+                        Ok(map(parsed))
+                    })
+                    .collect();
+                // A closed channel means the sink failed; stop producing.
+                if tx.send(Ok(results)).is_err() {
+                    return;
+                }
+            }
+        });
+
+        for batch in rx {
+            for result in batch? {
+                sink(result?)?;
+            }
+        }
+        Ok(())
+    })
+}
+
+/// Serialize a record to one JSONL line (without the trailing newline), so stages
+/// can serialize on the rayon pool and hand pre-built lines to the writers.
+pub fn to_line<T: Serialize>(record: &T) -> Result<String> {
+    Ok(serde_json::to_string(record)?)
+}
+
 /// Convenience reader for raw merge records.
 pub fn read_raw(path: &Path) -> Result<impl Iterator<Item = Result<RawRecord>>> {
     read_jsonl(path)
@@ -65,7 +145,11 @@ impl JsonlSink {
     }
 
     pub fn write<T: Serialize>(&mut self, record: &T) -> Result<()> {
-        let line = serde_json::to_string(record)?;
+        self.write_line(&to_line(record)?)
+    }
+
+    /// Write a line produced by [`to_line`].
+    pub fn write_line(&mut self, line: &str) -> Result<()> {
         self.writer.write_all(line.as_bytes())?;
         self.writer.write_all(b"\n")?;
         self.count += 1;
@@ -111,10 +195,15 @@ impl RejectWriter {
     }
 
     pub fn write(&mut self, record: &CorpusRecord) -> Result<()> {
+        self.write_line(&to_line(record)?)
+    }
+
+    /// Write a line produced by [`to_line`].
+    pub fn write_line(&mut self, line: &str) -> Result<()> {
         if self.sink.is_none() {
             self.sink = Some(JsonlSink::create(&self.path)?);
         }
-        self.sink.as_mut().unwrap().write(record)
+        self.sink.as_mut().unwrap().write_line(line)
     }
 
     pub fn count(&self) -> u64 {

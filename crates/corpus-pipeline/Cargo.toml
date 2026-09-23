@@ -58,6 +58,7 @@ lingua = { workspace = true }
 rand = { workspace = true }
 rand_chacha = { workspace = true }
 rustc-hash = { workspace = true }
+rayon = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

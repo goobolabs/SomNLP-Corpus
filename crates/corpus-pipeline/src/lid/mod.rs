@@ -6,7 +6,8 @@ use crate::config::LidBackend;
 pub mod stage;
 
 /// A language detector returning a normalized top-1 prediction and confidence.
-pub trait Detector {
+/// `Send + Sync` so one detector can be shared across the rayon pool.
+pub trait Detector: Send + Sync {
     fn name(&self) -> &'static str;
 
     /// Detect the top language. Returns `(code, confidence)` where `code` is an

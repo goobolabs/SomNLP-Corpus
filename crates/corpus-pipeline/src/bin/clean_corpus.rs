@@ -8,10 +8,10 @@ use anyhow::Result;
 use chrono::Utc;
 use clap::Parser;
 use common::reject::reject_exact_duplicate;
-use common::types::{ContentHash, DocId, QualityFlag, RecordDisposition};
+use common::types::{ContentHash, DocId, QualityFlag, RawRecord, RecordDisposition};
 use corpus_pipeline::clean::{clean_record, CleanResult};
 use corpus_pipeline::config::PipelineConfig;
-use corpus_pipeline::io::{read_raw, write_report, JsonlSink, RejectWriter};
+use corpus_pipeline::io::{par_map_jsonl, to_line, write_report, JsonlSink, RejectWriter};
 use corpus_pipeline::progress::{count_jsonl_lines, RecordProgress};
 use corpus_pipeline::report::{
     print_banner, print_drops_by_reason, print_kv, print_paths, print_per_source_flow, pct,
@@ -115,24 +115,32 @@ fn main() -> Result<()> {
 
     let progress = RecordProgress::start("Cleaning records", total);
 
-    for raw in read_raw(&args.input)? {
-        if args.limit.is_some_and(|limit| report.input_docs >= limit) {
-            break;
-        }
-        let raw = raw?;
+    // Cleaning and serialization run on the rayon pool; exact dedup against `seen`,
+    // stats, and writes stay sequential in input order, so first-seen-wins is unchanged.
+    let clean = |raw: RawRecord| -> Result<_> {
+        let result = clean_record(&raw, &config.clean, collected_at);
+        let line = match &result {
+            CleanResult::Processed(record) => Some(to_line(record)?),
+            CleanResult::Skipped => None,
+        };
+        Ok((raw.source, result, line))
+    };
+    par_map_jsonl(&args.input, args.limit, clean, |cleaned| {
+        let (raw_source, result, line) = cleaned?;
+        let line: String = line.unwrap_or_default();
         report.input_docs += 1;
         progress.inc();
 
-        let source_key = raw.source.as_deref().unwrap_or("unknown");
+        let source_key = raw_source.as_deref().unwrap_or("unknown");
         *report
             .per_source_input
             .entry(source_key.to_string())
             .or_insert(0) += 1;
 
-        let mut record = match clean_record(&raw, &config.clean, collected_at) {
+        let mut record = match result {
             CleanResult::Skipped => {
                 report.skipped_unknown_source += 1;
-                continue;
+                return Ok(());
             }
             CleanResult::Processed(record) => *record,
         };
@@ -152,8 +160,8 @@ fn main() -> Result<()> {
                 .or_insert(0) += 1;
             *report.per_source_rejected.entry(source).or_insert(0) += 1;
             report.rejected_docs += 1;
-            rejects.write(&record)?;
-            continue;
+            rejects.write_line(&line)?;
+            return Ok(());
         }
 
         if let Some(canonical) = seen.get(&record.content_hash) {
@@ -169,7 +177,7 @@ fn main() -> Result<()> {
             *report.per_source_rejected.entry(source).or_insert(0) += 1;
             report.rejected_docs += 1;
             rejects.write(&record)?;
-            continue;
+            return Ok(());
         }
         seen.insert(record.content_hash.clone(), record.id.clone());
 
@@ -185,8 +193,9 @@ fn main() -> Result<()> {
 
         *report.per_source_kept.entry(record.provenance.source.0.clone()).or_insert(0) += 1;
         report.output_docs += 1;
-        output.write(&record)?;
-    }
+        output.write_line(&line)?;
+        Ok(())
+    })?;
 
     report.drop_rate = if report.input_docs == 0 {
         0.0
