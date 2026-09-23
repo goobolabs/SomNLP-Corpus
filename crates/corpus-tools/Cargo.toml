@@ -78,6 +78,10 @@ path = "src/bin/download_finepdfs_so.rs"
 name = "download_somali_dataset_so"
 path = "src/bin/download_somali_dataset_so.rs"
 
+[[bin]]
+name = "download_fineweb2_so"
+path = "src/bin/download_fineweb2_so.rs"
+
 [dependencies]
 common = { path = "../common" }
 anyhow = { workspace = true }
