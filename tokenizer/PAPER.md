@@ -6,9 +6,9 @@
 
 ## Abstract
 
-This document describes the design, training procedure, and measured efficiency of corpus-native Byte Pair Encoding tokenizers for the Somali language (`so`), trained on the SomNLP-Corpus thirteen-source Track A release (7,352,961 documents, 665,985,672 words, 2026-09-02). Standard English-centric and general multilingual subword models impose substantial *token-per-word inflation* on Somali text because their merge inventories were optimized for typologically and orthographically distant languages.
+This document describes the design, training procedure, and measured efficiency of corpus-native Byte Pair Encoding tokenizers for the Somali language (`so`), measured on the SomNLP-Corpus seventeen-source Track A release (7,981,982 documents, 832,264,349 words, 2026-09-24). Standard English-centric and general multilingual subword models impose substantial *token-per-word inflation* on Somali text because their merge inventories were optimized for typologically and orthographically distant languages.
 
-Two models are documented. **v1** (32,000 types, whitespace pre-tokenization) was the initial release; it is retained unchanged for reproducibility but is unsuitable for generative use, because its decoder was configured for an end-of-word suffix the trainer never emitted and therefore fails to reconstruct whitespace on **every** document tested, and because out-of-alphabet characters collapse to an unknown token. **v2** (48,000 types, ByteLevel pre-tokenization and decoding) is the shipped model. It reconstructs its input exactly, cannot emit an unknown token because all 256 bytes seed the alphabet, and is nonetheless *more* efficient than v1: mean 1.3468 tokens per word against 1.3885 on a held-out split of 59,029 documents, versus 2.6336 for BERT-base and 1.8158 for XLM-RoBERTa-base on identical text.
+Two models are documented. **v1** (32,000 types, whitespace pre-tokenization) was the initial release; it is retained unchanged for reproducibility but is unsuitable for generative use, because its decoder was configured for an end-of-word suffix the trainer never emitted and therefore fails to reconstruct whitespace on **every** document tested, and because out-of-alphabet characters collapse to an unknown token. **v2** (48,000 types, ByteLevel pre-tokenization and decoding) is the shipped model. It reconstructs its input exactly, cannot emit an unknown token because all 256 bytes seed the alphabet, and is nonetheless *more* efficient than v1: mean 1.3444 tokens per word against 1.3834 on a held-out split of 64,041 documents, versus 2.6349 for BERT-base and 1.8105 for XLM-RoBERTa-base on identical text.
 
 The vocabulary size was selected from a measured four-point sweep rather than assumed, and both correctness properties are enforced by a property test suite rather than asserted in prose. The result is intended for pretraining and downstream Garaad Gacmeed systems where context-window utilization and inference cost are first-order engineering constraints.
 
@@ -55,29 +55,33 @@ Training text is extracted exclusively from the release corpus:
 | Attribute | Value |
 |-----------|------:|
 | Path | `data/final/final_so.jsonl` |
-| Documents | 7,352,961 |
-| Words | 665,985,672 |
-| On-disk size | 7.17 GiB |
+| Documents | 7,981,982 |
+| Words | 832,264,349 |
+| On-disk size | 8.45 GiB |
 | Schema | `CorpusRecord` v1 (`text`, `id`, `provenance.source`) |
-| Build date | 2026-09-02 (thirteen-source Track A) |
+| Build date | 2026-09-24 (seventeen-source Track A) |
 
 Upstream processing already applied HTML entity decoding, mojibake repair, Unicode NFC normalization, invisible-character stripping, whitespace normalization, language identification (`lingua`), boilerplate removal, segment-level Somali verification, intra-document paragraph deduplication, and MinHash near deduplication. Rejected sidecars (`*.rejected.jsonl`, `*.dropped.jsonl`) are excluded.
 
-**Composition.** Document share and word share diverge sharply, and word share is what governs merge learning: BPE counts word frequencies, so a source's influence on the merge table is proportional to the words it contributes, not the records. NLLB supplies 55.9% of documents but only 9.3% of words, because its records are short parallel sentences averaging 15 words; Glot500 shows the same pattern at 19.5% of documents for 10.1% of words. Conversely the four web-crawl sources supply 21.8% of documents and 79.1% of words. The resulting merge table is, in effect, a web-crawl tokenizer with a thin editorial and religious tail.
+**Composition.** Document share and word share diverge sharply, and word share is what governs merge learning: BPE counts word frequencies, so a source's influence on the merge table is proportional to the words it contributes, not the records. NLLB supplies 51.5% of documents but only 7.5% of words, because its records are short parallel sentences averaging 15 words; Glot500 shows the same pattern at 17.9% of documents for 8.0% of words. Conversely the five web-crawl sources (mC4, HPLT, FineWeb-2, MADLAD, CC-100) supply 27.0% of documents and 80.1% of words. The corpus is, in effect, web-crawl text with a thin editorial, instructional, and religious tail. The shipped v2 merge table was learned on the earlier eleven-source release (§6.5).
 
 | Source | Documents | Doc share | Words | Word share | Words/doc |
 |--------|----------:|----------:|------:|-----------:|----------:|
-| `mc4` | 590,121 | 8.1% | 218,605,468 | 33.1% | 370 |
-| `hplt` | 572,208 | 7.8% | 190,052,829 | 28.8% | 332 |
-| `glot` | 1,421,843 | 19.5% | 66,501,139 | 10.1% | 47 |
-| `madlad` | 132,317 | 1.8% | 64,487,875 | 9.8% | 487 |
-| `nllb` | 4,075,196 | 55.9% | 61,571,557 | 9.3% | 15 |
-| `cc100` | 296,770 | 4.1% | 49,448,818 | 7.5% | 167 |
-| `somali-web-corpus` | 120,854 | 1.7% | 4,855,405 | 0.7% | 40 |
-| `xlsum` | 5,603 | 0.1% | 2,004,843 | 0.3% | 358 |
-| `wikipedia` | 5,426 | 0.1% | 1,186,834 | 0.2% | 219 |
-| `mt560` | 48,811 | 0.7% | 1,153,705 | 0.2% | 24 |
-| `opus` | 12,037 | 0.2% | 378,964 | 0.1% | 31 |
+| `mc4` | 581,611 | 7.3% | 212,281,818 | 25.7% | 365 |
+| `hplt` | 550,451 | 7.0% | 183,155,601 | 22.2% | 333 |
+| `fineweb-2` | 585,006 | 7.4% | 155,760,016 | 18.9% | 266 |
+| `glot` | 1,420,654 | 17.9% | 66,384,509 | 8.0% | 47 |
+| `nllb` | 4,075,196 | 51.5% | 61,571,557 | 7.5% | 15 |
+| `madlad` | 127,690 | 1.6% | 61,353,448 | 7.4% | 480 |
+| `cc100` | 293,794 | 3.7% | 48,895,179 | 5.9% | 166 |
+| `finepdfs` | 20,619 | 0.3% | 18,486,739 | 2.2% | 897 |
+| `somali-dataset` | 37,244 | 0.5% | 5,740,735 | 0.7% | 154 |
+| `somali-web-corpus` | 120,842 | 1.5% | 4,854,113 | 0.6% | 40 |
+| `somali-tinystories` | 20,955 | 0.3% | 2,380,358 | 0.3% | 114 |
+| `xlsum` | 4,987 | 0.1% | 1,746,803 | 0.2% | 350 |
+| `mt560` | 48,811 | 0.6% | 1,153,705 | 0.1% | 24 |
+| `wikipedia` | 5,299 | 0.1% | 1,124,309 | 0.1% | 212 |
+| `opus` | 12,036 | 0.2% | 378,952 | 0.0% | 31 |
 | `quran` | 7,018 | 0.1% | 158,794 | 0.0% | 23 |
 | `quran-tanzil` | 5,722 | 0.1% | 105,227 | 0.0% | 18 |
 
@@ -93,16 +97,16 @@ The preparation script streams JSONL records once and writes two artifacts. A li
 
 Corpus-level sentinels for masked URLs and emails are preserved so the tokenizer can learn dedicated subword representations for them.
 
-**`somali_raw_corpus.txt`** carries the training text. Paragraph structure is retained, so a multi-paragraph document occupies several lines: 1,293,324 of 7,293,926 training documents (17.7%) contain at least one internal newline, essentially all of them from the document-class web sources. This file is therefore *not* one document per line. Earlier versions of this document claimed otherwise, which also meant the v1 benchmark's "per-document" ratios were in fact computed per paragraph for web-sourced text.
+**`somali_raw_corpus.txt`** carries the training text. Paragraph structure is retained, so a multi-paragraph document occupies several lines: 1,894,356 of 7,917,935 training documents (23.9%) contain at least one internal newline, essentially all of them from the document-class web sources. This file is therefore *not* one document per line. Earlier versions of this document claimed otherwise, which also meant the v1 benchmark's "per-document" ratios were in fact computed per paragraph for web-sourced text.
 
 **`eval_holdout.jsonl`** carries the evaluation split as one JSON record per line (`id`, `source`, `text`), which keeps documents containing newlines addressable as single units and preserves provenance for per-source reporting. Assignment is deterministic: a document is held out when `blake2b-8(id) mod 1000 < 8`. The split needs no stored index, is reproducible from the record id alone, and is stable across corpus rebuilds for documents whose id is unchanged.
 
 | Split | Documents | Words |
 |-------|----------:|------:|
-| Train | 7,293,926 | 660,511,458 |
-| Evaluation holdout | 59,029 | 5,474,214 |
+| Train | 7,917,935 | 825,531,863 |
+| Evaluation holdout | 64,041 | 6,732,486 |
 
-The two splits sum to 7,352,955 rather than the corpus's 7,352,961: six records are empty
+The two splits sum to 7,981,976 rather than the corpus's 7,981,982: six records are empty
 after stripping and NFC normalization and are skipped.
 
 ### 3.3 Training configuration (`train.py`)
@@ -138,7 +142,7 @@ The implementation follows the standard Hugging Face training loop:
 
 Because the merge rule is greedy and deterministic, the first \(k\) merges do not depend on the target vocabulary size; a larger run's merge list is a superset of a smaller one's.
 
-Measured cost on eight CPU cores: corpus preparation over 7,352,961 records takes 174 s, and a single full-corpus training run completes in minutes rather than hours. A `--limit-lines` flag supports smoke testing on subsets before production runs.
+Measured cost: corpus preparation over 7,981,982 records takes 116 s in a single process on an Apple M3 Max, and a single full-corpus training run completes in minutes rather than hours. A `--limit-lines` flag supports smoke testing on subsets before production runs.
 
 ### 4.1 Somali-specific tokenization mechanics
 
@@ -155,7 +159,7 @@ Several phenomena influence merge structure:
 
 Validation has three layers.
 
-**Unit and property tests (`tests/`).** A pytest suite runs against a 2,000-token tokenizer trained on a committed 210-document fixture spanning all thirteen sources, so the whole suite completes in under a second with no network access and no dependency on the 7 GB corpus. It asserts the properties that motivated v2:
+**Unit and property tests (`tests/`).** A pytest suite runs against a 2,000-token tokenizer trained on a committed 210-document fixture spanning the thirteen sources present when it was built, so the whole suite completes in under a second with no network access and no dependency on the 8.4 GiB corpus. It asserts the properties that motivated v2:
 
 - `decode(encode(x))` reproduces `NFC(x)` for every fixture document and for an adversarial set covering tabs, repeated spaces, paragraph breaks, emoji, CJK, runic script, the `⟨url⟩`/`⟨email⟩` sentinels, apostrophe clitics, and empty input;
 - the vocabulary contains no `<unk>` token and the 256-symbol byte alphabet is complete, so unknown-token loss is unreachable rather than merely unobserved;
@@ -182,45 +186,47 @@ Only the per-document ratios are retained during the pass, never the document st
 ### 6.1 Protocol
 
 All figures below come from a single scoring pass over the held-out evaluation split:
-**59,029 documents / 5,474,214 words**, excluded from v2 training. v1 was trained before
+**64,041 documents / 6,732,486 words**, excluded from v2 training. v1 was trained before
 this split existed and its training corpus overlapped it; that bias runs *in v1's favour*, so
 a v2 win here is conservative.
 
 Because the split is a hash of the record id (§3.2), it is stable across corpus rebuilds:
-every id held out of the thirteen-source corpus was also held out of the eleven-source
+every id held out of the seventeen-source corpus was also held out of the eleven-source
 corpus v2 trained on, so growing the corpus introduced no leakage. It did introduce
-*unseen* text — the holdout now contains Glot500 and Somali Web Corpus documents from two
-sources v2's merge table never saw. Those are reported in §6.4 and are the honest test of
+*unseen* text — the holdout now contains documents from six sources v2's merge table never
+saw: Glot500, Somali Web Corpus, FinePDFs, FineWeb-2, Somali Alpaca, and Somali TinyStories. Those are reported in §6.4 and are the honest test of
 whether the shipped vocabulary generalizes.
 
 Two changes make these numbers non-comparable with the figures published for v1 on
 2026-07-07. First, the unit is now the document: the earlier benchmark sampled *lines* of
 `somali_raw_corpus.txt`, and because 18% of documents contain internal newlines (§3.2), those
 "documents" were largely paragraphs. Second, the corpus itself grew from six sources to
-thirteen. The v1 column below is a fresh measurement under the current protocol, not the
+seventeen. The v1 column below is a fresh measurement under the current protocol, not the
 previously published 1.53.
 
 ### 6.2 v1 versus v2
 
 | Tokenizer | Mean \(R(d)\) | Median | P95 | Bytes/token | Docs with `<unk>` | Round-trip fidelity |
 |-----------|--------------:|-------:|----:|------------:|------------------:|--------------------:|
-| **v2 ByteLevel 48k (shipped)** | 1.3468 | 1.2766 | 1.8462 | 4.820 | 0 | **1.000** |
-| v2 ByteLevel 65,536 | 1.3142 | 1.2500 | 1.7917 | 4.942 | 0 | **1.000** |
-| v1 Whitespace 32k | 1.3885 | 1.3171 | 1.9091 | 4.738 | 4 | **0.000** |
-| XLM-RoBERTa-base | 1.8158 | 1.7500 | 2.4167 | 3.671 | 0 | n/a |
-| BERT-base-uncased | 2.6336 | 2.6170 | 3.2292 | 2.526 | 0 | n/a |
+| **v2 ByteLevel 48k (shipped)** | 1.3444 | 1.2765 | 1.8333 | 4.834 | 0 | **1.000** |
+| v1 Whitespace 32k | 1.3834 | 1.3141 | 1.8889 | 4.764 | 9 | **0.000** |
+| XLM-RoBERTa-base | 1.8105 | 1.7500 | 2.4000 | 3.686 | 0 | n/a |
+| BERT-base-uncased | 2.6349 | 2.6226 | 3.2025 | 2.529 | 0 | n/a |
 
-The shipped v2 model is better than v1 on every ratio metric — mean 1.3468 against
-1.3885, a 3.0% reduction — while also being reversible. This is the result that
+The 65,536-entry sweep candidate is compared in §6.3 on the thirteen-source holdout; the
+sweep artifacts are not tracked in the repository and were not re-scored on this split.
+
+The shipped v2 model is better than v1 on every ratio metric — mean 1.3444 against
+1.3834, a 2.8% reduction — while also being reversible. This is the result that
 matters: the correctness fix did not cost compression, it improved it, because the byte
 alphabet frees the merge table from spending capacity on rare characters.
 
-**Round-trip fidelity is the decisive column.** v1 fails on 59,029 of 59,029
+**Round-trip fidelity is the decisive column.** v1 fails on 64,041 of 64,041
 documents — every single one. Its `BPEDecoder` was configured to strip an `</w>` suffix
 that the trainer never emitted, so decoding concatenates tokens with no separator:
 `"Soomaaliya waa dal"` decodes as `"Soomaaliyawaadal"`. For a classification or retrieval
 encoder that is invisible; for a generative model it is disqualifying. v1 also emitted
-`<unk>` on 4 held-out documents. v2 scores 1.000 fidelity and cannot
+`<unk>` on 9 held-out documents. v2 scores 1.000 fidelity and cannot
 produce an unknown token at all.
 
 Against external baselines, v2 fragments Somali 1.96× less than BERT-base and
@@ -228,26 +234,38 @@ Against external baselines, v2 fragments Somali 1.96× less than BERT-base and
 
 **Corpus-level total, measured not extrapolated.** `tokenize_corpus.py` encodes every
 document in `final_so.jsonl` — no sampling, no holdout ratio applied to a word count. The
-shipped v2 model yields **911,824,557 tokens** over 665,985,672 words, a corpus-wide ratio
-of **1.3691** at 4.836 bytes/token. The full pass also fixes the document-length
-distribution used for context-window planning: 80.97% of documents encode to fewer than 128
-tokens (Glot500 and NLLB are sentence-level), and only 1.84% exceed 1,024.
+shipped v2 model yields **1,136,027,958 tokens** over 832,264,349 words, a corpus-wide ratio
+of **1.3650** at 4.854 bytes/token (thirteen-source release, 2026-09-02:
+911,824,557 tokens at 1.3691). The full pass also fixes the document-length
+distribution used for context-window planning: 76.37% of documents encode to fewer than 128
+tokens (Glot500 and NLLB are sentence-level), and only 2.12% exceed 1,024.
 
 | Tokenizer | Corpus tokens | Tokens/word | Bytes/token |
 |-----------|--------------:|------------:|------------:|
+| **v2 ByteLevel 48k (shipped)** | **1,136,027,958** | **1.3650** | 4.854 |
+| v1 Whitespace 32k | 1,152,845,792 | 1.3852 | 4.783 |
+
+Round-trip was verified during the same pass on every 500th document (15,999 checks per
+tokenizer): v2 fails none, v1 fails all of them.
+
+The vocabulary-sweep candidates were last measured over the full thirteen-source release
+(2026-09-02; 665,985,672 words). They are kept here for the size comparison and are not
+comparable with the seventeen-source totals above:
+
+| Tokenizer (13-source release) | Corpus tokens | Tokens/word | Bytes/token |
+|-----------|--------------:|------------:|------------:|
 | v2 ByteLevel 65,536 | 889,663,181 | 1.3359 | 4.956 |
 | **v2 ByteLevel 48k (shipped)** | **911,824,557** | **1.3691** | 4.836 |
-| v1 Whitespace 32k | 927,595,947 | 1.3928 | 4.754 |
 | v2 ByteLevel 32,000 | 947,053,346 | 1.4220 | 4.656 |
 | v2 ByteLevel 16,384 | 1,024,005,031 | 1.5376 | 4.306 |
-
-Round-trip was verified during the same pass on every 500th document (14,722 checks per
-tokenizer): v2 fails none, v1 fails all of them.
 
 ### 6.3 Vocabulary size
 
 Measured, not projected. Because BPE merges are greedy, the four candidates differ only in
 where the shared merge list is cut (§4), so this table isolates vocabulary size exactly.
+These figures come from the thirteen-source holdout (59,029 documents, 2026-09-02); the
+candidates live in the untracked `sweep/` directory and were not re-scored for the
+seventeen-source release.
 
 | Vocabulary | Mean \(R(d)\) | Median | P95 | Bytes/token | Holdout tokens |
 |-----------:|--------------:|-------:|----:|------------:|---------------:|
@@ -267,40 +285,40 @@ Mean tokens/word by source (holdout):
 
 | Source | v1 | v2-48k | XLM-R |
 |--------|---:|-------:|------:|
-| `mc4` | 1.4876 | 1.4683 | 1.8741 |
-| `hplt` | 1.3503 | 1.3419 | 1.7576 |
-| `glot` | 1.3844 | 1.3370 | 1.8071 |
-| `madlad` | 1.3482 | 1.3324 | 1.7661 |
+| `mc4` | 1.4931 | 1.4742 | 1.8785 |
+| `hplt` | 1.3512 | 1.3426 | 1.7576 |
+| `fineweb-2` | 1.3500 | 1.3395 | 1.7558 |
+| `glot` | 1.3846 | 1.3371 | 1.8073 |
 | `nllb` | 1.3711 | 1.3211 | 1.8012 |
-| `cc100` | 1.2868 | 1.2413 | 1.7083 |
-| `somali-web-corpus` | 1.2955 | 1.2472 | 1.6902 |
-| `xlsum` | 1.3344 | 1.2841 | 1.7244 |
-| `wikipedia` | 1.4883 | 1.4836 | 1.8331 |
+| `madlad` | 1.3551 | 1.3407 | 1.7736 |
+| `cc100` | 1.2868 | 1.2413 | 1.7081 |
+| `finepdfs` | 1.4556 | 1.4906 | 1.9122 |
+| `somali-dataset` | 1.4047 | 1.4022 | 1.8502 |
+| `somali-web-corpus` | 1.2960 | 1.2477 | 1.6905 |
+| `somali-tinystories` | 1.3010 | 1.2756 | 1.7935 |
+| `xlsum` | 1.3336 | 1.2821 | 1.7213 |
 | `mt560` | 1.2936 | 1.2292 | 1.8067 |
-| `opus` | 1.4081 | 1.3521 | 1.8012 |
+| `wikipedia` | 1.4885 | 1.4842 | 1.8308 |
+| `opus` | 1.4074 | 1.3517 | 1.8003 |
 | `quran` | 1.5785 | 1.5267 | 2.0063 |
 | `quran-tanzil` | 1.6171 | 1.5460 | 2.0635 |
 
 The religious sources are the hardest for every tokenizer, and the gap does not close with
 a native vocabulary: `quran-tanzil` costs v2 1.5460 tokens/word against 1.2413 for
 `cc100`. This is a direct consequence of the composition reported in §3.1 — those sources
-contribute 0.04% of training words, so few merges are shaped by their orthography.
+contribute 0.03% of training words, so few merges are shaped by their orthography.
 
-**The two unseen sources generalize.** `glot` (1.3370) and `somali-web-corpus` (1.2472) are
-absent from v2's training corpus entirely, yet both tokenize *better* than the holdout mean
-of 1.3468 and better than v1 does on the same documents (1.3844 and 1.2955). A vocabulary
-learned on eleven sources transfers to the thirteen-source corpus without measurable loss,
-which is why v2 was not retrained when the corpus grew.
+**The six unseen sources.** None of `glot`, `somali-web-corpus`, `fineweb-2`, `somali-tinystories`, `somali-dataset`, `finepdfs` was in v2's training corpus. Four tokenize at or below the holdout mean of 1.3444: `glot` (1.3371), `somali-web-corpus` (1.2477), `fineweb-2` (1.3395), and `somali-tinystories` (1.2756). `somali-dataset` sits 4.3% above the mean (1.4022), and `finepdfs` 10.9% above (1.4906). FinePDFs is the only one past a 10% margin, and it matches the register of two sources v2 *was* trained on, `wikipedia` (1.4842) and `mc4` (1.4742): formal and technical vocabulary with a similar share of digits and symbols. It carries 2.4% of corpus tokens. The corpus-wide ratio fell from 1.3691 to 1.3650 as the corpus grew, so the eleven-source vocabulary still transfers without measurable loss, and v2 was not retrained.
 
 ### 6.5 Limitations
 
 1. **Script coverage** — the corpus is Latin-script Somali; Arabic-script text is out of distribution. It will encode without loss under v2, but inefficiently.
-2. **Domain bias** — 79.1% of training words come from web crawl (§3.1). The merge table reflects web register far more than edited, spoken, or administrative Somali.
+2. **Domain bias** — 80.1% of corpus words come from web crawl (§3.1). The merge table reflects web register far more than edited, spoken, or administrative Somali.
 3. **Whitespace word definition** — \(R(d)\) uses whitespace splitting, which treats clitics and attached punctuation inconsistently across sources. Bytes/token is reported alongside as a definition-free compression measure.
 4. **Baseline mismatch** — BERT and XLM-R use different pre-tokenizers and normalizers; the comparison isolates tokenizer efficiency, not end-task accuracy.
 5. **v1's holdout overlap** — v1 saw an earlier version of these documents in training, so its numbers here are, if anything, flattering.
 6. **Round-trip is exact with respect to NFC**, not to arbitrary byte sequences; the normalizer is part of the tokenizer and the corpus is already NFC.
-7. **Vocabulary predates two sources** — v2's merge table was learned on the eleven-source corpus. Glot500 and Somali Web Corpus were added afterwards and contribute 10.8% of corpus words. §6.4 shows both tokenize better than the corpus mean, so the shipped model was kept; a thirteen-source retrain would move the headline by less than the sweep's smallest step.
+7. **Vocabulary predates six sources** — v2's merge table was learned on the eleven-source corpus. Glot500, Somali Web Corpus, FinePDFs, FineWeb-2, Somali Alpaca, and Somali TinyStories were added afterwards and contribute 30.7% of corpus words. §6.4 shows four of them at or below the holdout mean and FinePDFs 10.9% above it, in line with trained-on sources of the same register; the corpus-wide ratio improved, so the shipped model was kept. A retrain is the natural next step once unseen sources pass roughly a third of corpus words.
 
 ---
 
@@ -337,8 +355,8 @@ python tokenize_corpus.py --jobs 7 \
 
 `tokenize_corpus.py` shards the corpus by byte range across a process pool. Each worker
 returns counters only — never texts — and percentiles come from a mergeable fixed-width
-histogram, so peak memory is independent of corpus size. A thirteen-source pass over five
-tokenizers takes about 65 minutes on eight cores.
+histogram, so peak memory is independent of corpus size. A seventeen-source pass over two
+tokenizers takes 2.6 minutes with 16 workers on an Apple M3 Max.
 
 Smoke-test the whole path on a subset before a production run:
 
@@ -372,4 +390,4 @@ Training BPE on the SomNLP-Corpus final release aligns subword statistics with a
 
 ---
 
-*Document version: 2.1 — v2 ByteLevel tokenizer on the thirteen-source corpus: held-out split of 59,029 documents plus a measured full-corpus pass (2026-09-02).*
+*Document version: 2.2 — v2 ByteLevel tokenizer on the seventeen-source corpus: held-out split of 64,041 documents plus a measured full-corpus pass (2026-09-24).*

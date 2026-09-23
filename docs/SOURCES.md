@@ -25,6 +25,10 @@ See also: [METADATA_SCHEMA.md](METADATA_SCHEMA.md), [PLAN.md](../PLAN.md).
 | `nllb` | NLLB English–Somali | parallel text | A | 10.2M pairs raw · 4.7M kept at merge | ODC-BY | `download_nllb_so` | done | Official Meta/AllenAI NLLB TSV export |
 | `glot` | Glot500 Somali (`som_Latn`) | web crawl / aggregated | A | ~3.9M docs (HF train) | see source | `download_glot_so` | done | HF `cis-lmu/Glot500` parquet export |
 | `somali-web-corpus` | Somali Web Corpus V1 | web crawl | A | ~218K docs (HF train) | MIT | `download_somali_web_corpus_so` | done | HF `maanka2/somali-web-corpus` parquet export |
+| `finepdfs` | FinePDFs Somali (`som_Latn`) | PDF documents | A | 21,781 docs (HF train) | ODC-BY | `download_finepdfs_so` | done | HF `HuggingFaceFW/finepdfs` parquet export; long documents |
+| `fineweb-2` | FineWeb-2 Somali (`som_Latn`) | web crawl | A | 1,070,384 docs (HF train) | ODC-BY | `download_fineweb2_so` | done | HF `HuggingFaceFW/fineweb-2` parquet export; heavy overlap with HPLT/mC4 |
+| `somali-dataset` | Somali Alpaca instructions | instruction data | A | 44,839 rows (HF train) | MIT | `download_somali_dataset_so` | done | HF `burtugeey/Somali_dataset`; instruction, input, and output joined per row |
+| `somali-tinystories` | Somali TinyStories | synthetic stories | A | 42,000 rows (HF train) | unspecified | `download_somali_tinystories_so` | done | HF `Zyroxx66/somali-tinystories`; no license on dataset card; 20,900 stories duplicated upstream |
 | `tanzil` | Tanzil Qur'an Somali (Abduh) | religious | A | 6,236 ayahs | see source | `download_quran_tanzil` | done | Separate translation from QuranEnc; no footnotes upstream |
 
 ### Track A licensing note
@@ -35,10 +39,38 @@ from this registry (see [METADATA_SCHEMA.md](METADATA_SCHEMA.md)).
 
 ### Track A outlook
 
-Eleven public sources total **12.9M raw documents** (NLLB dominates). The full
-thirteen-source Track A corpus measured **7.35M final documents · 666M words · 912M v2
-tokens** (2026-09-02 run — see [README.md](../README.md)). Incremental measurement
+Seventeen public sources total **18.2M raw documents** (NLLB dominates). The full
+seventeen-source Track A corpus measured **7,981,982 final documents · 832M words ·
+1,136M v2 tokens** (2026-09-24 run — see [README.md](../README.md)). The previous
+thirteen-source run (2026-09-02) measured 7.35M final documents · 666M words · 912M v2 tokens. Incremental measurement
 notes: [reports/runs/MEASUREMENT.md](../reports/runs/MEASUREMENT.md).
+
+### Measured final documents (2026-09-24)
+
+| Key | Raw | Kept at merge | Final | Words | v2 tokens |
+|-----|----:|-------------:|------:|------:|----------:|
+| `nllb` | 10,229,073 | 4,372,863 | 4,108,233 | 62,072,423 | 82,095,163 |
+| `glot` | 3,915,898 | 3,840,628 | 1,432,277 | 66,937,207 | 89,396,283 |
+| `fineweb-2` | 1,070,384 | 854,429 | 589,824 | 156,995,286 | 208,794,537 |
+| `mc4` | 893,012 | 892,852 | 586,265 | 214,035,586 | 313,609,489 |
+| `hplt` | 966,507 | 798,161 | 554,851 | 184,700,703 | 247,457,800 |
+| `cc100` | 396,524 | 374,720 | 296,154 | 49,297,018 | 61,321,488 |
+| `madlad` | 200,494 | 177,030 | 128,700 | 61,831,676 | 82,255,318 |
+| `somali-web-corpus` | 217,528 | 217,390 | 121,764 | 4,890,563 | 6,111,014 |
+| `mt560` | 161,865 | 51,083 | 49,195 | 1,162,745 | 1,423,242 |
+| `somali-dataset` | 44,839 | 44,793 | 37,512 | 5,781,223 | 7,974,652 |
+| `somali-tinystories` | 42,000 | 21,100 | 21,100 | 2,396,895 | 3,074,429 |
+| `finepdfs` | 21,781 | 21,780 | 20,771 | 18,625,820 | 27,654,658 |
+| `opus` | 14,879 | 12,296 | 12,126 | 381,716 | 517,056 |
+| `quran` | 7,373 | 7,277 | 7,072 | 160,068 | 240,053 |
+| `quran-tanzil` | 6,236 | 6,048 | 5,773 | 106,282 | 164,038 |
+| `wikipedia` | 9,021 | 8,994 | 5,338 | 1,130,331 | 1,748,915 |
+| `xlsum` | 7,452 | 7,451 | 5,027 | 1,758,807 | 2,189,823 |
+| **Total** | **18,204,866** | **11,708,895** | **7,981,982** | **832,264,349** | **1,136,027,958** |
+
+Raw, merge, and final counts come from `reports/01_merge_stats.json` and
+`reports/05_near_dedup_stats.json`; words and tokens from `tokenizer/corpus_token_stats.json`
+(which skips the 6 empty records).
 
 ### Measured final documents (2026-08-31)
 
@@ -152,6 +184,39 @@ notes: [reports/runs/MEASUREMENT.md](../reports/runs/MEASUREMENT.md).
 - **Access:** Hugging Face parquet export (`refs/convert/parquet`); train split (~218K rows)
 - **Output:** `data/raw/somali-web-corpus/somali-web-corpus_so.jsonl`
 - **License:** MIT
+
+### `finepdfs`
+
+- **Upstream:** [HuggingFaceFW/finepdfs](https://huggingface.co/datasets/HuggingFaceFW/finepdfs) subset `som_Latn`
+- **Access:** Hugging Face parquet export (`refs/convert/parquet`); `som_Latn/train` shards, `text` column
+- **Output:** `data/raw/finepdfs/finepdfs_so.jsonl`
+- **License:** ODC-BY
+
+### `fineweb-2`
+
+- **Upstream:** [HuggingFaceFW/fineweb-2](https://huggingface.co/datasets/HuggingFaceFW/fineweb-2) subset `som_Latn`
+- **Access:** Hugging Face parquet export (`refs/convert/parquet`); `som_Latn/train` shards, `text` column
+- **Output:** `data/raw/fineweb-2/fineweb-2_so.jsonl`
+- **License:** ODC-BY
+- **Overlap:** built from Common Crawl like HPLT and mC4; 215,950 rows are exact
+  cross-source duplicates at merge and 235,557 more are removed by near-dedup (2026-09-24)
+
+### `somali-dataset`
+
+- **Upstream:** [burtugeey/Somali_dataset](https://huggingface.co/datasets/burtugeey/Somali_dataset) config `default`
+- **Access:** Hugging Face parquet export (`refs/convert/parquet`); train split. Each row's
+  non-empty `instruction`, `input`, and `output` are joined with a blank line
+- **Output:** `data/raw/somali-dataset/somali-dataset_so.jsonl`
+- **License:** MIT (dataset card)
+
+### `somali-tinystories`
+
+- **Upstream:** [Zyroxx66/somali-tinystories](https://huggingface.co/datasets/Zyroxx66/somali-tinystories) config `default`
+- **Access:** Hugging Face parquet export (`refs/convert/parquet`); train split, `story` column
+- **Output:** `data/raw/somali-tinystories/somali-tinystories_so.jsonl`
+- **License:** not stated on the dataset card; recorded as `Other`. Confirm with the owner
+  before redistribution
+- **Data note:** 20,900 of the 42,000 upstream stories appear twice verbatim; merge keeps one copy
 
 ### `nllb`
 

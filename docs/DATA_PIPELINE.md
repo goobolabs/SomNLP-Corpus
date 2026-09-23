@@ -50,6 +50,20 @@ MT560 records include a source tag:
 ./target/release/download_xlsum_so        [--limit N] [--field F] [--splits S...]
 ./target/release/download_nllb_so         [--limit N] [--min-laser L] [--min-som-lid S]
 ./target/release/download_quran_tanzil    [--limit N] [--translation-id ID]
+./target/release/download_glot_so         [--limit N] [--no-stream] [--split S]
+./target/release/download_somali_web_corpus_so [--limit N] [--no-stream]
+./target/release/download_finepdfs_so     [--limit N] [--no-stream]
+./target/release/download_fineweb2_so     [--limit N] [--no-stream]
+./target/release/download_somali_dataset_so [--limit N] [--no-stream]
+./target/release/download_somali_tinystories_so [--limit N] [--no-stream]
+```
+
+To run every downloader concurrently with one retry each, recording rows and bytes per
+source in `reports/full_download_results.tsv`:
+
+```bash
+scripts/data/run_all_downloads.sh             # all download_* binaries
+PARALLEL=3 scripts/data/run_all_downloads.sh  # cap concurrency
 ```
 
 | Flag | Description |
@@ -73,6 +87,12 @@ Default outputs:
 | XL-Sum | `data/raw/xlsum/xlsum_so.jsonl` |
 | NLLB | `data/raw/nllb/nllb_so.jsonl` |
 | Qur'an (Tanzil) | `data/raw/quran-tanzil/translation.json` |
+| Glot500 | `data/raw/glot/glot_so.jsonl` |
+| Somali Web Corpus | `data/raw/somali-web-corpus/somali-web-corpus_so.jsonl` |
+| FinePDFs | `data/raw/finepdfs/finepdfs_so.jsonl` |
+| FineWeb-2 | `data/raw/fineweb-2/fineweb-2_so.jsonl` |
+| Somali Alpaca | `data/raw/somali-dataset/somali-dataset_so.jsonl` |
+| Somali TinyStories | `data/raw/somali-tinystories/somali-tinystories_so.jsonl` |
 
 Recommended download order: HPLT → CC100 → mC4 → OPUS → MADLAD → MT560 → Wikipedia → XLSum → NLLB → Tanzil.
 
@@ -178,6 +198,15 @@ Run the full post-download pipeline in one command:
 Stages: `merge` → `clean` → `lid` → `deep_clean` → `near_dedup` (invokes sibling
 binaries).
 
+`clean`, `lid`, `deep_clean`, and `near_dedup` use every core: records are read in
+batches, parsed, processed, and serialized on a rayon pool, while statistics, exact dedup,
+and writes stay sequential in input order, so output is identical to a single-threaded
+run. Set `RAYON_NUM_THREADS` to cap the thread count. `merge` is single-threaded.
+
+On a machine with limited disk, `scripts/data/run_pipeline_pruned.sh` runs one stage at a
+time and deletes each superseded intermediate JSONL once the next stage has written its
+report. Reject sidecars and `data/raw/` are kept.
+
 ## Reports and reject sidecars
 
 Every stage writes **JSON stats** under `reports/` and a companion **Markdown summary**
@@ -241,14 +270,14 @@ jq -r '[.reason, .source, .text] | @tsv' \
 | `corrupted` | Replacement-char ratio above `ufffd_reject_ratio` |
 | `exact_duplicate_after_clean` | Same normalized text hash as an earlier kept record |
 
-**LID** — document-class sources only (HPLT, CC100, mC4, MADLAD):
+**LID** — document-class sources only (every source whose registry class is `Document`):
 
 | Reason | Meaning |
 |--------|---------|
 | `not_somali` | Detector returned a non-Somali language |
 | `low_lang_score` | Detected Somali but below `min_confidence` |
 
-Sentence-class sources (OPUS, MT560) are tagged only — never rejected at LID.
+Sentence-class sources (OPUS, MT560, NLLB, QuranEnc, Tanzil) are tagged only — never rejected at LID.
 
 **Deep clean** — see [CLEANING_STRATEGY.md](CLEANING_STRATEGY.md) for full flag list.
 Common reject reasons:
