@@ -20,7 +20,8 @@ M1 Foundation ─▶ M2 Public datasets ─▶ M3 Pipeline ─▶ M4 Collection 
 
 - [x] `corpus-tools` crate with shared download utilities
 - [x] Downloaders: HPLT, CC100, mC4, OPUS, MADLAD, MT560, QuranEnc, Tanzil,
-      Wikipedia, XL-Sum, NLLB, Glot500, Somali Web Corpus (thirteen total)
+      Wikipedia, XL-Sum, NLLB, Glot500, Somali Web Corpus, FinePDFs, FineWeb-2,
+      Somali Alpaca, Somali TinyStories (seventeen total)
 - [x] `merge_corpora` to combine raw JSONL sources
 - [x] Architecture and pipeline documentation
 
@@ -74,8 +75,8 @@ merge → clean → LID → deep_clean → near dedup → final
 - [x] `run_pipeline` chains all five post-merge stages
 - [x] Full-corpus v0.2 re-run and audit re-measurement (`reports/06_cleaning_audit.md`)
 
-**Exit (met):** 17.0M raw → **7,352,961** final docs · **666M words** · 7.2 GB
-(2026-09-02 thirteen-source run). See [reports/runs/MEASUREMENT.md](reports/runs/MEASUREMENT.md).
+**Exit (met):** 18.2M raw → **7,981,982** final docs · **832M words** · 8.4 GB
+(2026-09-24 seventeen-source run; previous: 7,352,961 docs, 2026-09-02, thirteen sources). See [reports/runs/MEASUREMENT.md](reports/runs/MEASUREMENT.md).
 
 ---
 
@@ -121,9 +122,9 @@ Add targeted Somali text beyond public dumps.
 | Milestone | Theme | Status |
 |-----------|-------|--------|
 | M1 | Foundation | done |
-| M2 | Public dataset download + merge (13 sources) | done |
+| M2 | Public dataset download + merge (17 sources) | done |
 | M3 | Cleaning, dedup, langid pipeline | done |
-| M3.5 | v0.2 deep clean + full pipeline run (13-src measured) | done |
+| M3.5 | v0.2 deep clean + full pipeline run (17-src measured) | done |
 | M4 | Web & Wikipedia collection | planned |
 | M5 | Extended sources | planned |
 | M6 | Release v0.2-clean (Hugging Face) | in progress |

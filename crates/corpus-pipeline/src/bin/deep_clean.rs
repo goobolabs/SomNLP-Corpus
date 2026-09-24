@@ -8,10 +8,10 @@ use anyhow::Result;
 use chrono::Utc;
 use clap::Parser;
 use common::reject;
-use common::types::{RecordDisposition};
+use common::types::{CorpusRecord, RecordDisposition};
 use corpus_pipeline::config::PipelineConfig;
 use corpus_pipeline::deep_clean::deep_clean_record;
-use corpus_pipeline::io::{read_corpus, write_report, JsonlSink, RejectWriter};
+use corpus_pipeline::io::{par_map_jsonl, to_line, write_report, JsonlSink, RejectWriter};
 use corpus_pipeline::lid::build;
 use corpus_pipeline::progress::{count_jsonl_lines, RecordProgress};
 use corpus_pipeline::report::{
@@ -62,6 +62,14 @@ struct DeepCleanReport {
     reject_sidecar: String,
 }
 
+/// One deep-cleaned record, already serialized for its destination file.
+enum Processed {
+    /// Rejected by an earlier stage; copied to the reject sidecar unchanged.
+    Passthrough { source: String, line: String },
+    Rejected { source: String, reason: String, line: String },
+    Kept { source: String, line: String },
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
     let config = PipelineConfig::load(&args.config)?;
@@ -93,47 +101,67 @@ fn main() -> Result<()> {
 
     let progress = RecordProgress::start("Deep-cleaning records", total);
 
-    for item in read_corpus(&args.input)? {
-        if args.limit.is_some_and(|limit| report.input_docs >= limit) {
-            break;
+    // Deep cleaning and serialization run on the rayon pool; stats and writes stay
+    // sequential, in input order.
+    let process = |record: CorpusRecord| -> Result<Processed> {
+        let source = record.provenance.source.0.clone();
+        if record.quality.disposition == RecordDisposition::Rejected {
+            let line = to_line(&record)?;
+            return Ok(Processed::Passthrough { source, line });
         }
-        let record = item?;
+        let outcome =
+            deep_clean_record(record, &config.deep_clean, &config.clean, detector.as_ref());
+        match outcome.reject {
+            Some(flag) => {
+                let reason = quality_flag_name(&flag);
+                let mut rejected = outcome.record;
+                reject::reject(&mut rejected, flag);
+                let line = to_line(&rejected)?;
+                Ok(Processed::Rejected {
+                    source,
+                    reason,
+                    line,
+                })
+            }
+            None => {
+                let line = to_line(&outcome.record)?;
+                Ok(Processed::Kept { source, line })
+            }
+        }
+    };
+    par_map_jsonl(&args.input, args.limit, process, |processed| {
         report.input_docs += 1;
         progress.inc();
 
-        let source = record.provenance.source.0.clone();
-        *report.per_source_input.entry(source.clone()).or_insert(0) += 1;
-
-        if record.quality.disposition == RecordDisposition::Rejected {
-            report.passthrough_rejected += 1;
-            report.rejected_docs += 1;
-            rejects.write(&record)?;
-            continue;
+        match processed? {
+            Processed::Passthrough { source, line } => {
+                *report.per_source_input.entry(source).or_insert(0) += 1;
+                report.passthrough_rejected += 1;
+                report.rejected_docs += 1;
+                rejects.write_line(&line)?;
+            }
+            Processed::Rejected { source, reason, line } => {
+                *report.per_source_input.entry(source.clone()).or_insert(0) += 1;
+                *report.drops_by_reason.entry(reason.clone()).or_insert(0) += 1;
+                *report
+                    .per_source_drops_by_reason
+                    .entry(source.clone())
+                    .or_default()
+                    .entry(reason)
+                    .or_insert(0) += 1;
+                *report.per_source_rejected.entry(source).or_insert(0) += 1;
+                report.rejected_docs += 1;
+                rejects.write_line(&line)?;
+            }
+            Processed::Kept { source, line } => {
+                *report.per_source_input.entry(source.clone()).or_insert(0) += 1;
+                *report.per_source_kept.entry(source).or_insert(0) += 1;
+                report.output_docs += 1;
+                output.write_line(&line)?;
+            }
         }
-
-        let outcome = deep_clean_record(record, &config.deep_clean, &config.clean, detector.as_ref());
-
-        if let Some(flag) = outcome.reject {
-            let reason = quality_flag_name(&flag);
-            let mut rejected = outcome.record;
-            reject::reject(&mut rejected, flag);
-            *report.drops_by_reason.entry(reason.clone()).or_insert(0) += 1;
-            *report
-                .per_source_drops_by_reason
-                .entry(source.clone())
-                .or_default()
-                .entry(reason)
-                .or_insert(0) += 1;
-            *report.per_source_rejected.entry(source).or_insert(0) += 1;
-            report.rejected_docs += 1;
-            rejects.write(&rejected)?;
-            continue;
-        }
-
-        *report.per_source_kept.entry(source).or_insert(0) += 1;
-        report.output_docs += 1;
-        output.write(&outcome.record)?;
-    }
+        Ok(())
+    })?;
 
     report.drop_rate = if report.input_docs == 0 {
         0.0

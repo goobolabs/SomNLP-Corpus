@@ -7,6 +7,21 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Seventeen-source measured run (2026-09-24)** — full Track A pipeline on all downloaders:
+  18.2M raw → 11.71M merged → 7,981,982 final documents ·
+  832M words · **1,136,027,958 v2 subword tokens** (1.3650 tokens/word),
+  measured over every document. Timings, downloads, and per-source funnel:
+  [docs/runs/2026-09-24.md](docs/runs/2026-09-24.md)
+- **FinePDFs, FineWeb-2, Somali Alpaca, and Somali TinyStories** registered in
+  `crates/common/src/registry.rs` and appended to `merge_source_order`, so first-seen-wins
+  exact dedup keeps the earlier sources' copy of any shared text. Near-dedup still keeps the
+  longest member of each cluster, so a longer FineWeb-2 page can displace an HPLT or mC4
+  near-duplicate. Contributions: FineWeb-2 (`fineweb-2`) 589,824 final documents (18.4% of
+  tokens); FinePDFs (`finepdfs`) 20,771 (2.4%); Somali Alpaca (`somali-dataset`) 37,512
+  (0.7%); Somali TinyStories (`somali-tinystories`) 21,100 (0.3%)
+- `scripts/data/run_all_downloads.sh` (concurrent downloads, one retry, per-source rows and
+  bytes) and `scripts/data/run_pipeline_pruned.sh` (stage-by-stage run that deletes each
+  superseded intermediate JSONL once the next stage has written its report)
 - **Thirteen-source measured run (2026-09-02)** — full Track A pipeline on all downloaders:
   17.0M raw → 10.79M merged → 7,352,961 final documents · 666M words ·
   **911,824,557 v2 subword tokens**, measured over every document rather than extrapolated
@@ -58,6 +73,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Pipeline stages use every core.** `clean`, `lid`, `deep_clean`, and `near_dedup` parse,
+  process, and serialize records on a rayon pool in batches, while stats, exact dedup, and
+  writes stay sequential in input order. Output is byte-identical to the serial path
+  (verified on a 249,665-document sample across all stages, sidecars, and reports).
+  Full 17-source run: 1 h 18 min end to end
+- `Detector` is now `Send + Sync` so one language detector is shared across threads
+- Tokenizer figures re-measured on the 17-source corpus: holdout of 64,041 documents,
+  v1 1.3834 and v2 **1.3444** mean tokens/word. v2 was **not** retrained;
+  FinePDFs is the one new source above the holdout mean by more than 10%
+  (1.4906), matching the register of Wikipedia (1.4842) and mC4 (1.4742) and carrying
+  2.4% of tokens
 - v1 benchmark figures superseded. Under the corrected document-level protocol on the
   thirteen-source corpus, v1 measures 1.3885 mean tokens/word and v2 measures
   **1.3468**, against 2.6336 (BERT-base) and 1.8158 (XLM-RoBERTa).
@@ -74,6 +100,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   and the old name caused pytest to collect a file containing no tests.
 - `tokenizer/somali-bpe-tokenizer.json` (v1) retained unchanged so its figures stay
   reproducible.
+
+### Known issues
+
+- Somali TinyStories carries no license on its dataset card; recorded as `Other` pending
+  confirmation from the dataset owner.
+- The upstream TinyStories split repeats 20,900 of its 42,000 stories verbatim; merge
+  exact dedup keeps one copy of each.
 
 ### Planned
 

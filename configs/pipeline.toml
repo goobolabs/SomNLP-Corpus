@@ -19,6 +19,12 @@ merge_source_order = [
   "somali-web-corpus",
   "glot",
   "nllb",
+  # 2026-09-24: new sources appended last so first-seen-wins exact dedup keeps
+  # the earlier sources' copy of any text they share.
+  "finepdfs",
+  "fineweb-2",
+  "somali-dataset",
+  "somali-tinystories",
 ]
 
 [clean]

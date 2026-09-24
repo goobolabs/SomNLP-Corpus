@@ -7,6 +7,7 @@ pub mod minhash;
 pub mod shingle;
 pub mod union_find;
 
+use rayon::prelude::*;
 use rustc_hash::FxHashMap;
 
 use crate::config::NearDedupConfig;
@@ -38,17 +39,25 @@ pub fn near_dedup(
     cfg: &NearDedupConfig,
 ) -> DedupOutcome {
     let hasher = MinHasher::new(cfg.k_hashes, cfg.seed);
-    let signatures: Vec<Vec<u64>> = shingle_sets.iter().map(|s| hasher.signature(s)).collect();
+    let signatures: Vec<Vec<u64>> = shingle_sets
+        .par_iter()
+        .map(|s| hasher.signature(s))
+        .collect();
 
     let candidates = lsh::candidate_pairs(&signatures, cfg.bands, cfg.rows);
     let candidate_pairs = candidates.len();
 
     // Mandatory exact-Jaccard verification at the real threshold: LSH only yields
     // ~0.5-similarity candidates, so unverified removal would be too aggressive.
+    // Jaccard is computed in parallel; unions are applied in candidate order.
+    let verified: Vec<bool> = candidates
+        .par_iter()
+        .map(|&(i, j)| shingle::jaccard(&shingle_sets[i], &shingle_sets[j]) >= cfg.tau)
+        .collect();
     let mut uf = UnionFind::new(shingle_sets.len());
     let mut verified_pairs = 0usize;
-    for (i, j) in candidates {
-        if shingle::jaccard(&shingle_sets[i], &shingle_sets[j]) >= cfg.tau {
+    for (&(i, j), is_verified) in candidates.iter().zip(verified) {
+        if is_verified {
             uf.union(i, j);
             verified_pairs += 1;
         }

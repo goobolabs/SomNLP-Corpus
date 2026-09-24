@@ -15,11 +15,11 @@ contains a corpus-trained ByteLevel BPE tokenizer.
 
 ## Current release
 
-The latest measured build completed on **2026-09-02** and combines **13 public sources**:
+The latest measured build completed on **2026-09-24** and combines **17 public sources**:
 
 | Final documents | Words | v2 subword tokens | JSONL size |
 | --------------: | ----: | ----------------: | ---------: |
-| 7,352,961 | 665,985,672 | 911,824,557 | 7.2 GB |
+| 7,981,982 | 832,264,349 | 1,136,027,958 | 8.4 GB |
 
 The release artifact is `data/final/final_so.jsonl`. Corpus data is not stored in Git;
 build it with the pipeline below. Trained tokenizer artifacts and their benchmark summary
@@ -32,7 +32,8 @@ milestones and [CHANGELOG.md](CHANGELOG.md) for project history.
 ## What is included
 
 - Downloaders for HPLT, CC100, mC4, OPUS, MADLAD, MT560, QuranEnc, Tanzil,
-  Wikipedia, XL-Sum, NLLB, Glot500, and Somali Web Corpus
+  Wikipedia, XL-Sum, NLLB, Glot500, Somali Web Corpus, FinePDFs, FineWeb-2, Somali
+  Alpaca (`Somali_dataset`), and Somali TinyStories
 - Streaming merge and exact deduplication
 - Text normalization, language identification, source-aware deep cleaning, and
   MinHash/LSH near-deduplication
@@ -52,16 +53,17 @@ raw/       merged/              cleaned/  lid/   deep_clean/  final/
 
 | Stage | Documents | Removed at stage |
 | ----- | --------: | ---------------: |
-| Downloaded | 17,025,862 | — |
-| Merged | 10,790,439 | 6,235,423 |
-| Cleaned | 8,104,479 | 2,685,960 |
-| LID verified | 7,791,520 | 312,959 |
-| Deep cleaned | 7,757,223 | 34,297 |
-| **Final** | **7,352,961** | **404,262** |
+| Downloaded | 18,204,866 | — |
+| Merged | 11,708,895 | 6,495,971 |
+| Cleaned | 9,016,020 | 2,692,875 |
+| LID verified | 8,698,655 | 317,365 |
+| Deep cleaned | 8,638,442 | 60,213 |
+| **Final** | **7,981,982** | **656,460** |
 
-These figures describe the 2026-09-02 run (13 sources) and may change when upstream
-datasets change. Run 12 (twelve sources, 2026-09-01): 7.24M final · 662M words · 906M
-tokens. Each local run writes detailed stage statistics under `reports/`.
+These figures describe the 2026-09-24 run (17 sources) and may change when upstream
+datasets change. Previous run (13 sources, 2026-09-02): 7.35M final · 666M words ·
+912M tokens. Each local run writes detailed stage statistics under `reports/`; the timings and
+per-source funnel for this run are in [docs/runs/2026-09-24.md](docs/runs/2026-09-24.md).
 
 Document-class sources use a 25-word minimum, Somali language-ID gating, and near
 deduplication. Sentence-class sources use a 5-word minimum and exact deduplication; their
@@ -98,7 +100,7 @@ build if you want a clean run.
 
 ### Build the full corpus
 
-Run the 13 downloaders:
+Run the 17 downloaders:
 
 ```bash
 ./target/release/download_hplt_so
@@ -114,6 +116,10 @@ Run the 13 downloaders:
 ./target/release/download_nllb_so
 ./target/release/download_glot_so
 ./target/release/download_somali_web_corpus_so
+./target/release/download_finepdfs_so
+./target/release/download_fineweb2_so
+./target/release/download_somali_dataset_so
+./target/release/download_somali_tinystories_so
 ```
 
 Then run every processing stage:
@@ -135,6 +141,10 @@ streaming, but the largest stages still require substantial disk space and runti
 | MADLAD-400 Somali | document | ODC-BY |
 | Glot500 (`som_Latn`) | document | source-specific |
 | Somali Web Corpus V1 | document | MIT |
+| FinePDFs (`som_Latn`) | document | ODC-BY |
+| FineWeb-2 (`som_Latn`) | document | ODC-BY |
+| Somali Alpaca (`burtugeey/Somali_dataset`) | document | MIT |
+| Somali TinyStories (`Zyroxx66/somali-tinystories`) | document | unspecified upstream |
 | Somali Wikipedia | document | CC-BY-SA-4.0 |
 | XL-Sum Somali | document | CC-BY-4.0 |
 | OPUS ParaCrawl (`en-so`) | sentence | CC0-1.0 |
@@ -185,18 +195,20 @@ The repository includes two trained tokenizer artifacts:
 
 | Metric | v1 (32k) | **v2 (48k)** |
 | ------ | --------: | -----------: |
-| Mean tokens/word | 1.3885 | **1.3468** |
-| P95 tokens/word | 1.9091 | **1.8462** |
-| Bytes/token | 4.738 | **4.820** |
+| Mean tokens/word | 1.3834 | **1.3444** |
+| P95 tokens/word | 1.8889 | **1.8333** |
+| Bytes/token | 4.764 | **4.834** |
 | Round-trip fidelity | 0.000 | **1.000** |
-| Documents emitting `<unk>` | 4 | **0** |
+| Documents emitting `<unk>` | 9 | **0** |
 
-Scored on 59,029 held-out documents from the 13-source corpus, against 1.8158 for
-XLM-RoBERTa-base and 2.6336 for BERT-base on the same text. v2's vocabulary was trained on
-the earlier 11-source corpus; the two sources added since — Glot500 and Somali Web Corpus —
-tokenize at 1.3370 and 1.2472, better than the holdout mean, so it was not retrained.
+Scored on 64,041 held-out documents from the 17-source corpus, against 1.8105 for
+XLM-RoBERTa-base and 2.6349 for BERT-base on the same text. v2's vocabulary was trained on
+the earlier 11-source corpus and was not retrained for the six sources added since. On the
+holdout, FineWeb-2 (1.3395) and Somali TinyStories (1.2756) tokenize at or below the
+mean of 1.3444; Somali Alpaca (1.4022) is slightly above it, and FinePDFs (1.4906) is in
+line with Wikipedia (1.4842) and mC4 (1.4742), which v2 was trained on.
 
-The 911,824,557-token release total comes from `tokenize_corpus.py`, which encodes every
+The 1,136,027,958-token release total comes from `tokenize_corpus.py`, which encodes every
 document in the corpus rather than extrapolating from the holdout ratio.
 
 To run the tokenizer tests and reproduce its preparation, training, and benchmark steps:

@@ -9,13 +9,17 @@ use anyhow::Result;
 use clap::Parser;
 use common::registry;
 use common::reject::reject_near_duplicate;
+use common::types::CorpusRecord;
 use corpus_pipeline::config::PipelineConfig;
-use corpus_pipeline::io::{read_corpus, write_report, JsonlSink, RejectWriter};
+use corpus_pipeline::io::{
+    par_map_jsonl, to_line, write_report, JsonlSink, RejectWriter, PAR_BATCH,
+};
 use corpus_pipeline::near_dedup::{near_dedup, shingle};
 use corpus_pipeline::progress::{count_jsonl_lines, PhaseProgress, RecordProgress};
 use corpus_pipeline::report::{
     print_banner, print_kv, print_paths, print_per_source_flow, pct, write_markdown_companion,
 };
+use rayon::prelude::*;
 use serde::Serialize;
 
 const DEFAULT_INPUT: &str = "data/deep_clean/deep_clean_so.jsonl";
@@ -67,6 +71,13 @@ fn is_document_class(source: &str) -> bool {
         .unwrap_or(true)
 }
 
+/// A record read by near-dedup: held for clustering, or already serialized for
+/// sentence-class passthrough.
+enum Partitioned {
+    Document(CorpusRecord),
+    Sentence { source: String, line: String },
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
     let config = PipelineConfig::load(&args.config)?;
@@ -104,23 +115,35 @@ fn main() -> Result<()> {
     // Document-class records are held in memory for clustering; sentence-class
     // records stream straight through.
     let mut doc_records = Vec::new();
-    for record in read_corpus(&args.input)? {
-        let record = record?;
+    let partition = |record: CorpusRecord| -> Result<Partitioned> {
+        let source = record.provenance.source.0.clone();
+        if is_document_class(&source) {
+            Ok(Partitioned::Document(record))
+        } else {
+            let line = to_line(&record)?;
+            Ok(Partitioned::Sentence { source, line })
+        }
+    };
+    par_map_jsonl(&args.input, None, partition, |partitioned| {
         report.input_docs += 1;
         read_progress.inc();
 
-        let source = record.provenance.source.0.clone();
-        *report.per_source_input.entry(source.clone()).or_insert(0) += 1;
-
-        if is_document_class(&source) {
-            doc_records.push(record);
-        } else {
-            report.sentence_passthrough += 1;
-            *report.per_source_kept.entry(source).or_insert(0) += 1;
-            report.output_docs += 1;
-            output.write(&record)?;
+        match partitioned? {
+            Partitioned::Document(record) => {
+                let source = record.provenance.source.0.clone();
+                *report.per_source_input.entry(source).or_insert(0) += 1;
+                doc_records.push(record);
+            }
+            Partitioned::Sentence { source, line } => {
+                *report.per_source_input.entry(source.clone()).or_insert(0) += 1;
+                report.sentence_passthrough += 1;
+                *report.per_source_kept.entry(source).or_insert(0) += 1;
+                report.output_docs += 1;
+                output.write_line(&line)?;
+            }
         }
-    }
+        Ok(())
+    })?;
     report.document_input = doc_records.len() as u64;
     read_progress.finish(format!(
         "{} docs ({} document-class, {} sentence passthrough)",
@@ -130,7 +153,7 @@ fn main() -> Result<()> {
     phases.next("Building shingles");
     let shingle_progress = RecordProgress::start("Shingling documents", Some(report.document_input));
     let shingle_sets: Vec<Vec<u64>> = doc_records
-        .iter()
+        .par_iter()
         .map(|r| {
             shingle_progress.inc();
             shingle::shingle_ints(&r.text, config.near_dedup.shingle_k)
@@ -155,17 +178,38 @@ fn main() -> Result<()> {
     // Resolve canonical ids before consuming the records.
     let canonical_ids: Vec<_> = doc_records.iter().map(|r| r.id.clone()).collect();
 
-    for (idx, mut record) in doc_records.into_iter().enumerate() {
-        write_progress.inc();
-        let source = record.provenance.source.0.clone();
-        if let Some(&canonical) = outcome.removed_to_canonical.get(&idx) {
-            reject_near_duplicate(&mut record, canonical_ids[canonical].clone());
-            *report.per_source_removed.entry(source).or_insert(0) += 1;
-            rejects.write(&record)?;
-        } else {
-            *report.per_source_kept.entry(source).or_insert(0) += 1;
-            report.output_docs += 1;
-            output.write(&record)?;
+    // Serialize in parallel chunks (bounded extra memory), write sequentially in order.
+    let mut records = doc_records.into_iter().enumerate();
+    loop {
+        let chunk: Vec<(usize, CorpusRecord)> = records.by_ref().take(PAR_BATCH).collect();
+        if chunk.is_empty() {
+            break;
+        }
+        let serialized: Vec<Result<(String, bool, String)>> = chunk
+            .into_par_iter()
+            .map(|(idx, mut record)| {
+                let source = record.provenance.source.0.clone();
+                let removed = match outcome.removed_to_canonical.get(&idx) {
+                    Some(&canonical) => {
+                        reject_near_duplicate(&mut record, canonical_ids[canonical].clone());
+                        true
+                    }
+                    None => false,
+                };
+                Ok((source, removed, to_line(&record)?))
+            })
+            .collect();
+        for item in serialized {
+            let (source, removed, line) = item?;
+            write_progress.inc();
+            if removed {
+                *report.per_source_removed.entry(source).or_insert(0) += 1;
+                rejects.write_line(&line)?;
+            } else {
+                *report.per_source_kept.entry(source).or_insert(0) += 1;
+                report.output_docs += 1;
+                output.write_line(&line)?;
+            }
         }
     }
 

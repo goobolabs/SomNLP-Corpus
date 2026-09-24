@@ -78,10 +78,14 @@ collection adds fresher, higher-quality, domain-specific text that public dumps 
 | Tanzil (Abduh) | ~6.2K ayahs (no footnotes) |
 | Glot500 | 3.9M rows raw · 3.84M kept at merge |
 | Somali Web Corpus | 217,528 rows raw · 121,777 final documents |
+| FinePDFs | 21,781 rows raw · 20,771 final documents |
+| FineWeb-2 | 1,070,384 rows raw · 589,824 final documents |
+| Somali Alpaca | 44,839 rows raw · 37,512 final documents |
+| Somali TinyStories | 42,000 rows raw · 21,100 final documents |
 
-All thirteen downloaders are implemented. After cross-source dedup and quality filtering,
-full Track A measured **7.35M final documents · 666M words · 912M v2 subword tokens**
-(2026-09-02 run — see [README.md](README.md)).
+All seventeen downloaders are implemented. After cross-source dedup and quality filtering,
+full Track A measured **7.98M final documents · 832M words · 1.14B v2 subword tokens**
+(2026-09-24 run — see [README.md](README.md)).
 
 ### Track B — collected sources (estimates)
 
