@@ -10,7 +10,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Seventeen-source measured run (2026-09-24)** — full Track A pipeline on all downloaders:
   18.2M raw → 11.71M merged → 7,981,982 final documents ·
   832M words · **1,136,027,958 v2 subword tokens** (1.3650 tokens/word),
-  measured over every document
+  measured over every document. Timings, downloads, and per-source funnel:
+  [docs/runs/2026-09-24.md](docs/runs/2026-09-24.md)
 - **FinePDFs, FineWeb-2, Somali Alpaca, and Somali TinyStories** registered in
   `crates/common/src/registry.rs` and appended to `merge_source_order`, so first-seen-wins
   exact dedup keeps the earlier sources' copy of any shared text. Near-dedup still keeps the

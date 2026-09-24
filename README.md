@@ -62,7 +62,8 @@ raw/       merged/              cleaned/  lid/   deep_clean/  final/
 
 These figures describe the 2026-09-24 run (17 sources) and may change when upstream
 datasets change. Previous run (13 sources, 2026-09-02): 7.35M final · 666M words ·
-912M tokens. Each local run writes detailed stage statistics under `reports/`.
+912M tokens. Each local run writes detailed stage statistics under `reports/`; the timings and
+per-source funnel for this run are in [docs/runs/2026-09-24.md](docs/runs/2026-09-24.md).
 
 Document-class sources use a 25-word minimum, Somali language-ID gating, and near
 deduplication. Sentence-class sources use a 5-word minimum and exact deduplication; their
