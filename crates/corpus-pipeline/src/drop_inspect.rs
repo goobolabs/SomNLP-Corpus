@@ -71,9 +71,7 @@ fn line_count(path: &Path) -> Option<u64> {
         return None;
     }
     let text = String::from_utf8_lossy(&out.stdout);
-    text.split_whitespace()
-        .next()
-        .and_then(|n| n.parse().ok())
+    text.split_whitespace().next().and_then(|n| n.parse().ok())
 }
 
 pub fn merge_dropped_path_for(output: &Path) -> PathBuf {
@@ -87,7 +85,9 @@ pub fn merge_dropped_path_for(output: &Path) -> PathBuf {
 /// Print a menu of commands to view dropped texts (only for stages that ran).
 pub fn print_inspect_menu(stages: &[String]) {
     print_banner("Inspect dropped texts");
-    println!("  Run one stage:  bash reports/inspect_drops.sh <merge|clean|lid|deep_clean|near_dedup>");
+    println!(
+        "  Run one stage:  bash reports/inspect_drops.sh <merge|clean|lid|deep_clean|near_dedup>"
+    );
     println!("  Run all:        bash reports/inspect_drops.sh\n");
 
     for sidecar in sidecars_for_stages(stages) {

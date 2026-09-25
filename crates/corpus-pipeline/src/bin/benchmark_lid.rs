@@ -211,10 +211,16 @@ fn render_markdown(report: &BenchmarkReport) -> String {
 fn main() -> Result<()> {
     let args = Args::parse();
     let rows: Vec<EvalRow> = read_jsonl(&args.eval)?.collect::<Result<_>>()?;
-    anyhow::ensure!(!rows.is_empty(), "eval set is empty: {}", args.eval.display());
+    anyhow::ensure!(
+        !rows.is_empty(),
+        "eval set is empty: {}",
+        args.eval.display()
+    );
 
-    let detectors: Vec<Box<dyn Detector>> =
-        vec![lid::build(LidBackend::Whatlang), lid::build(LidBackend::Lingua)];
+    let detectors: Vec<Box<dyn Detector>> = vec![
+        lid::build(LidBackend::Whatlang),
+        lid::build(LidBackend::Lingua),
+    ];
 
     let mut backends: Vec<BackendResult> = detectors
         .iter()
@@ -230,10 +236,7 @@ fn main() -> Result<()> {
                     .unwrap_or(std::cmp::Ordering::Equal),
             )
     });
-    let recommendation = backends
-        .first()
-        .map(|b| b.name.clone())
-        .unwrap_or_default();
+    let recommendation = backends.first().map(|b| b.name.clone()).unwrap_or_default();
 
     let report = BenchmarkReport {
         generated_at: chrono::Utc::now().to_rfc3339(),
@@ -255,6 +258,10 @@ fn main() -> Result<()> {
         );
     }
     println!("Recommended backend: {}", report.recommendation);
-    println!("Reports: {} , {}", args.report_json.display(), args.report_md.display());
+    println!(
+        "Reports: {} , {}",
+        args.report_json.display(),
+        args.report_md.display()
+    );
     Ok(())
 }

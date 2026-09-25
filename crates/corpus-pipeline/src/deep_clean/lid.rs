@@ -19,7 +19,12 @@ fn clip(text: &str, max_bytes: usize) -> &str {
     &text[..end]
 }
 
-fn is_somali_segment(detector: &dyn Detector, text: &str, min_confidence: f64, clip_bytes: usize) -> bool {
+fn is_somali_segment(
+    detector: &dyn Detector,
+    text: &str,
+    min_confidence: f64,
+    clip_bytes: usize,
+) -> bool {
     let snippet = clip(text, clip_bytes);
     if snippet.trim().is_empty() {
         return true;

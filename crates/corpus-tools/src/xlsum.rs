@@ -45,7 +45,10 @@ pub fn download_xlsum(
     streaming: bool,
 ) -> Result<crate::Stats> {
     if !FIELDS.contains(&field) {
-        bail!("unknown field '{field}'; expected one of {}", FIELDS.join(", "));
+        bail!(
+            "unknown field '{field}'; expected one of {}",
+            FIELDS.join(", ")
+        );
     }
 
     let hf = HfClient::new();
@@ -98,7 +101,10 @@ pub fn download_xlsum(
 /// fails loudly instead of silently exporting a short corpus.
 fn select_shards(listed: &[String], splits: &[String]) -> Result<Vec<String>> {
     if splits.is_empty() {
-        bail!("no splits requested; expected one or more of {}", SPLITS.join(", "));
+        bail!(
+            "no splits requested; expected one or more of {}",
+            SPLITS.join(", ")
+        );
     }
 
     let mut shards = Vec::new();

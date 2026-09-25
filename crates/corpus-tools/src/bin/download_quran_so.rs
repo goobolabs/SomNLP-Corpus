@@ -36,8 +36,11 @@ async fn main() -> Result<()> {
     let client = Client::builder().user_agent("corpus-tools/0.1").build()?;
     let corpus = quran::fetch_corpus(&client, args.concurrency.max(1)).await?;
 
-    let translation_stats =
-        write_dataset(&args.translation_output, &corpus.translations, args.limit.limit)?;
+    let translation_stats = write_dataset(
+        &args.translation_output,
+        &corpus.translations,
+        args.limit.limit,
+    )?;
     let footnotes_stats =
         write_dataset(&args.footnotes_output, &corpus.footnotes, args.limit.limit)?;
 

@@ -17,7 +17,7 @@ use corpus_pipeline::io::{
 use corpus_pipeline::near_dedup::{near_dedup, shingle};
 use corpus_pipeline::progress::{count_jsonl_lines, PhaseProgress, RecordProgress};
 use corpus_pipeline::report::{
-    print_banner, print_kv, print_paths, print_per_source_flow, pct, write_markdown_companion,
+    pct, print_banner, print_kv, print_paths, print_per_source_flow, write_markdown_companion,
 };
 use rayon::prelude::*;
 use serde::Serialize;
@@ -74,7 +74,7 @@ fn is_document_class(source: &str) -> bool {
 /// A record read by near-dedup: held for clustering, or already serialized for
 /// sentence-class passthrough.
 enum Partitioned {
-    Document(CorpusRecord),
+    Document(Box<CorpusRecord>),
     Sentence { source: String, line: String },
 }
 
@@ -118,7 +118,7 @@ fn main() -> Result<()> {
     let partition = |record: CorpusRecord| -> Result<Partitioned> {
         let source = record.provenance.source.0.clone();
         if is_document_class(&source) {
-            Ok(Partitioned::Document(record))
+            Ok(Partitioned::Document(Box::new(record)))
         } else {
             let line = to_line(&record)?;
             Ok(Partitioned::Sentence { source, line })
@@ -132,7 +132,7 @@ fn main() -> Result<()> {
             Partitioned::Document(record) => {
                 let source = record.provenance.source.0.clone();
                 *report.per_source_input.entry(source).or_insert(0) += 1;
-                doc_records.push(record);
+                doc_records.push(*record);
             }
             Partitioned::Sentence { source, line } => {
                 *report.per_source_input.entry(source.clone()).or_insert(0) += 1;
@@ -151,7 +151,8 @@ fn main() -> Result<()> {
     ));
 
     phases.next("Building shingles");
-    let shingle_progress = RecordProgress::start("Shingling documents", Some(report.document_input));
+    let shingle_progress =
+        RecordProgress::start("Shingling documents", Some(report.document_input));
     let shingle_sets: Vec<Vec<u64>> = doc_records
         .par_iter()
         .map(|r| {
@@ -173,7 +174,8 @@ fn main() -> Result<()> {
         .insert("near_duplicate".to_string(), report.removed as u64);
 
     phases.next("Writing output and reject sidecar");
-    let write_progress = RecordProgress::start("Writing document results", Some(report.document_input));
+    let write_progress =
+        RecordProgress::start("Writing document results", Some(report.document_input));
 
     // Resolve canonical ids before consuming the records.
     let canonical_ids: Vec<_> = doc_records.iter().map(|r| r.id.clone()).collect();
@@ -244,7 +246,11 @@ fn main() -> Result<()> {
     print_kv("clusters", report.clusters);
     print_kv(
         "removed",
-        format!("{} ({})", report.removed, pct(report.removed as u64, report.input_docs)),
+        format!(
+            "{} ({})",
+            report.removed,
+            pct(report.removed as u64, report.input_docs)
+        ),
     );
     print_kv("kept", report.output_docs);
     print_per_source_flow(
@@ -272,7 +278,10 @@ fn markdown_body(report: &NearDedupReport, reject_count: u64) -> String {
     md.push_str(&format!("- Tau (Jaccard): {}\n", report.tau));
     md.push_str(&format!("- Input: {}\n", report.input_docs));
     md.push_str(&format!("- Document class: {}\n", report.document_input));
-    md.push_str(&format!("- Sentence passthrough: {}\n", report.sentence_passthrough));
+    md.push_str(&format!(
+        "- Sentence passthrough: {}\n",
+        report.sentence_passthrough
+    ));
     md.push_str(&format!(
         "- Candidate pairs: {} ({} verified)\n",
         report.candidate_pairs, report.verified_pairs

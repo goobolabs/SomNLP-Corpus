@@ -160,8 +160,10 @@ pub fn read_jsonl_texts(path: &Path) -> Result<impl Iterator<Item = Result<Strin
     let file = File::open(path).with_context(|| format!("opening {}", path.display()))?;
     let reader = BufReader::new(file);
 
-    Ok(reader.lines().enumerate().filter_map(move |(index, line)| {
-        match line {
+    Ok(reader
+        .lines()
+        .enumerate()
+        .filter_map(move |(index, line)| match line {
             Ok(raw) => {
                 let raw = raw.trim();
                 if raw.is_empty() {
@@ -177,8 +179,7 @@ pub fn read_jsonl_texts(path: &Path) -> Result<impl Iterator<Item = Result<Strin
                 Some(Ok(text))
             }
             Err(error) => Some(Err(error.into())),
-        }
-    }))
+        }))
 }
 
 fn parse_jsonl_text(line: &str, path: &Path, line_number: usize) -> Result<String> {

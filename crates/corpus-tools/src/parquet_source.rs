@@ -10,7 +10,8 @@ use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 pub fn iter_text_column(path: &Path, column: &str) -> Result<impl Iterator<Item = Result<String>>> {
     let column = column.to_string();
-    let file = File::open(path).with_context(|| format!("opening parquet file {}", path.display()))?;
+    let file =
+        File::open(path).with_context(|| format!("opening parquet file {}", path.display()))?;
     let reader = ParquetRecordBatchReaderBuilder::try_new(file)?
         .build()
         .context("building parquet reader")?;
@@ -31,7 +32,8 @@ pub fn iter_struct_field(
 ) -> Result<impl Iterator<Item = Result<String>>> {
     let column = column.to_string();
     let field = field.to_string();
-    let file = File::open(path).with_context(|| format!("opening parquet file {}", path.display()))?;
+    let file =
+        File::open(path).with_context(|| format!("opening parquet file {}", path.display()))?;
     let reader = ParquetRecordBatchReaderBuilder::try_new(file)?
         .build()
         .context("building parquet reader")?;
@@ -56,7 +58,11 @@ fn extract_string_column(batch: &RecordBatch, column: &str) -> Vec<Result<String
     string_values(array, column)
 }
 
-fn extract_struct_string_field(batch: &RecordBatch, column: &str, field: &str) -> Vec<Result<String>> {
+fn extract_struct_string_field(
+    batch: &RecordBatch,
+    column: &str,
+    field: &str,
+) -> Vec<Result<String>> {
     let schema = batch.schema();
     let index = match schema.index_of(column) {
         Ok(index) => index,
@@ -68,7 +74,11 @@ fn extract_struct_string_field(batch: &RecordBatch, column: &str, field: &str) -
         return vec![Err(anyhow::anyhow!("column {column} is not a struct"))];
     };
 
-    let field_index = match struct_array.column_names().iter().position(|name| *name == field) {
+    let field_index = match struct_array
+        .column_names()
+        .iter()
+        .position(|name| *name == field)
+    {
         Some(index) => index,
         None => {
             return vec![Err(anyhow::anyhow!(
@@ -77,7 +87,10 @@ fn extract_struct_string_field(batch: &RecordBatch, column: &str, field: &str) -
         }
     };
 
-    string_values(struct_array.column(field_index), &format!("{column}.{field}"))
+    string_values(
+        struct_array.column(field_index),
+        &format!("{column}.{field}"),
+    )
 }
 
 fn string_values(array: &dyn Array, label: &str) -> Vec<Result<String>> {

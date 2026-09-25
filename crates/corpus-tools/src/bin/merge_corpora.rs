@@ -90,10 +90,7 @@ fn write_markdown_report(
         "- Input: {}\n",
         format_number(counters.total_input)
     ));
-    md.push_str(&format!(
-        "- Kept: {}\n",
-        format_number(counters.total_kept)
-    ));
+    md.push_str(&format!("- Kept: {}\n", format_number(counters.total_kept)));
     md.push_str(&format!(
         "- Dropped: {} ({:.2}%)\n",
         format_number(counters.total_dropped()),
@@ -109,7 +106,9 @@ fn write_markdown_report(
     ));
 
     md.push_str("## Per source\n\n");
-    md.push_str("| Source | Status | Input | Kept | Dropped | Drop % |\n|---|---|---:|---:|---:|---:|\n");
+    md.push_str(
+        "| Source | Status | Input | Kept | Dropped | Drop % |\n|---|---|---:|---:|---:|---:|\n",
+    );
     for source in counters.per_source_input.keys() {
         let input = counters.per_source_input.get(source).copied().unwrap_or(0);
         let kept = counters.per_source_kept.get(source).copied().unwrap_or(0);
@@ -128,7 +127,9 @@ fn write_markdown_report(
     md.push_str(&format!("\nOutput: `{}`\n", output.display()));
     md.push_str("\n## View dropped texts\n\n");
     md.push_str("```bash\n");
-    md.push_str("jq -r '[.reason, .source, .text] | @tsv' data/merged/merged_so.dropped.jsonl | head -30\n");
+    md.push_str(
+        "jq -r '[.reason, .source, .text] | @tsv' data/merged/merged_so.dropped.jsonl | head -30\n",
+    );
     md.push_str("bash reports/inspect_drops.sh merge\n");
     md.push_str("```\n");
     std::fs::write(&md_path, md)?;
@@ -268,16 +269,8 @@ fn main() -> Result<()> {
     println!("{}", "=".repeat(56));
     println!("Exact dedup summary");
     println!("{}", "=".repeat(56));
-    println!(
-        "  {:<22} {}",
-        "input",
-        format_number(counters.total_input)
-    );
-    println!(
-        "  {:<22} {}",
-        "kept",
-        format_number(counters.total_kept)
-    );
+    println!("  {:<22} {}", "input", format_number(counters.total_input));
+    println!("  {:<22} {}", "kept", format_number(counters.total_kept));
     println!(
         "  {:<22} {} ({})",
         "dropped",

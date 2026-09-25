@@ -126,7 +126,10 @@ fn noise_heuristics(text: &str) -> (u8, Vec<String>) {
         }
     }
 
-    if text.chars().filter(|c| !c.is_whitespace() && !c.is_alphanumeric()).count() as f64
+    if text
+        .chars()
+        .filter(|c| !c.is_whitespace() && !c.is_alphanumeric())
+        .count() as f64
         / text.chars().filter(|c| !c.is_whitespace()).count().max(1) as f64
         > 0.35
     {
@@ -335,11 +338,7 @@ fn write_markdown_report(
     let mut out = File::create(path)?;
 
     writeln!(out, "# Document minimum word threshold benchmark\n")?;
-    writeln!(
-        out,
-        "- Generated: {}",
-        chrono::Utc::now().to_rfc3339()
-    )?;
+    writeln!(out, "- Generated: {}", chrono::Utc::now().to_rfc3339())?;
     writeln!(out, "- Document sources: HPLT, CC100, mC4, MADLAD")?;
     writeln!(
         out,
@@ -351,10 +350,16 @@ fn write_markdown_report(
         }
     )?;
     writeln!(out, "- Cleaning: production `clean_text` chain (entities, mojibake, NFC, strip, repeats, whitespace)")?;
-    writeln!(out, "- Length measured on **cleaned** text; empty/corrupted excluded from length stats\n")?;
+    writeln!(
+        out,
+        "- Length measured on **cleaned** text; empty/corrupted excluded from length stats\n"
+    )?;
 
     writeln!(out, "## Input volumes\n")?;
-    writeln!(out, "| Source | Records | Empty after clean | Corrupted (U+FFFD) |")?;
+    writeln!(
+        out,
+        "| Source | Records | Empty after clean | Corrupted (U+FFFD) |"
+    )?;
     writeln!(out, "|---|---:|---:|---:|")?;
     for source in DOCUMENT_SOURCES {
         if let Some(c) = per_source.get(*source) {
@@ -377,7 +382,11 @@ fn write_markdown_report(
                 stats.per_source_total.get(*source),
                 stats.per_source_length_reject.get(*source),
             ) {
-                let pct = stats.per_source_reject_pct.get(*source).copied().unwrap_or(0.0);
+                let pct = stats
+                    .per_source_reject_pct
+                    .get(*source)
+                    .copied()
+                    .unwrap_or(0.0);
                 writeln!(out, "| {} | {} | {} | {:.2}% |", source, reject, total, pct)?;
             }
         }
@@ -394,7 +403,10 @@ fn write_markdown_report(
     }
 
     writeln!(out, "## Manual inspection samples (~100 per threshold)\n")?;
-    writeln!(out, "Heuristic labels: `noise` (score ≥ 2) vs `content` (score < 2). Review these manually.\n")?;
+    writeln!(
+        out,
+        "Heuristic labels: `noise` (score ≥ 2) vs `content` (score < 2). Review these manually.\n"
+    )?;
 
     for &threshold in THRESHOLDS {
         writeln!(out, "### Threshold {} — sample rejects\n", threshold)?;
@@ -402,7 +414,11 @@ fn write_markdown_report(
         pool.sort_by_key(|s| s.source.clone());
         let show = pool.len().min(20);
         for sample in pool.iter().take(show) {
-            let label = if sample.noise_score >= 2 { "noise" } else { "content?" };
+            let label = if sample.noise_score >= 2 {
+                "noise"
+            } else {
+                "content?"
+            };
             let snippet: String = sample.text.chars().take(200).collect();
             writeln!(
                 out,
@@ -422,7 +438,11 @@ fn write_markdown_report(
     // Recommendation logic
     let rec = recommend_threshold(threshold_stats);
     writeln!(out, "## Recommendation\n")?;
-    writeln!(out, "**Suggested `document_min_words`: {}**\n", rec.threshold)?;
+    writeln!(
+        out,
+        "**Suggested `document_min_words`: {}**\n",
+        rec.threshold
+    )?;
     writeln!(out, "{}\n", rec.rationale)?;
 
     Ok(())
@@ -452,7 +472,11 @@ fn recommend_threshold(stats: &[ThresholdStats]) -> Recommendation {
             -((s.overall_reject_pct - 9.0).abs())
         };
         let noise_bonus = s.inspection_noise_pct / 25.0;
-        let loss_penalty = if s.overall_reject_pct > 20.0 { -5.0 } else { 0.0 };
+        let loss_penalty = if s.overall_reject_pct > 20.0 {
+            -5.0
+        } else {
+            0.0
+        };
         let score = target_band + noise_bonus + loss_penalty;
         if score > best_score {
             best_score = score;

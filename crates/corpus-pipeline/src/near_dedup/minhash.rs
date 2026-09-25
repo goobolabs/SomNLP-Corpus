@@ -33,10 +33,10 @@ impl MinHasher {
             return sig;
         }
         for &id in ids {
-            for i in 0..k {
-                let h = (self.a[i].wrapping_mul(id).wrapping_add(self.b[i])) % P_PRIME;
-                if h < sig[i] {
-                    sig[i] = h;
+            for ((min, &a), &b) in sig.iter_mut().zip(&self.a).zip(&self.b) {
+                let h = (a.wrapping_mul(id).wrapping_add(b)) % P_PRIME;
+                if h < *min {
+                    *min = h;
                 }
             }
         }

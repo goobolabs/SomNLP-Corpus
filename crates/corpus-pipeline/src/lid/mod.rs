@@ -43,7 +43,11 @@ impl Detector for WhatlangDetector {
         let info = whatlang::detect(text)?;
         // whatlang reports ISO 639-3; normalize Somali to "so".
         let raw = info.lang().code();
-        let code = if raw == "som" { "so".to_string() } else { raw.to_string() };
+        let code = if raw == "som" {
+            "so".to_string()
+        } else {
+            raw.to_string()
+        };
         Some((code, info.confidence()))
     }
 }
@@ -99,9 +103,8 @@ mod tests {
     #[test]
     fn whatlang_detects_somali_text() {
         let d = WhatlangDetector;
-        let result = d.detect(
-            "Soomaaliya waa dal ku yaal Geeska Afrika, waxayna leedahay xeeb dheer.",
-        );
+        let result =
+            d.detect("Soomaaliya waa dal ku yaal Geeska Afrika, waxayna leedahay xeeb dheer.");
         assert!(result.is_some());
     }
 

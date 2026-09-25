@@ -59,8 +59,7 @@ struct PipelineDropsReport {
 }
 
 fn read_json(path: &Path) -> Result<Value> {
-    let text = fs::read_to_string(path)
-        .with_context(|| format!("reading {}", path.display()))?;
+    let text = fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
     serde_json::from_str(&text).with_context(|| format!("parsing {}", path.display()))
 }
 
@@ -74,7 +73,10 @@ fn map_f64(value: &Value) -> f64 {
 
 fn merge_drops(value: &Value) -> Vec<DropRow> {
     let mut rows = Vec::new();
-    if let Some(map) = value.get("within_source_dup_drops").and_then(|v| v.as_object()) {
+    if let Some(map) = value
+        .get("within_source_dup_drops")
+        .and_then(|v| v.as_object())
+    {
         let total: u64 = map.values().map(map_u64).sum();
         if total > 0 {
             rows.push(DropRow {
@@ -84,7 +86,10 @@ fn merge_drops(value: &Value) -> Vec<DropRow> {
             });
         }
     }
-    if let Some(map) = value.get("cross_source_dup_drops").and_then(|v| v.as_object()) {
+    if let Some(map) = value
+        .get("cross_source_dup_drops")
+        .and_then(|v| v.as_object())
+    {
         let total: u64 = map.values().map(map_u64).sum();
         if total > 0 {
             rows.push(DropRow {
@@ -114,11 +119,7 @@ fn drops_by_reason(value: &Value, stage: &str) -> Vec<DropRow> {
     rows
 }
 
-fn per_source_stage_drops(
-    value: &Value,
-    stage: &str,
-    key: &str,
-) -> Vec<SourceDropRow> {
+fn per_source_stage_drops(value: &Value, stage: &str, key: &str) -> Vec<SourceDropRow> {
     let mut rows = Vec::new();
     let Some(map) = value.get(key).and_then(|v| v.as_object()) else {
         return rows;
@@ -271,11 +272,7 @@ pub fn write_pipeline_drops_report(
         ));
         // fallback if only per_source_rejected exists
         if per_source_drops.iter().all(|r| r.stage != "clean") {
-            per_source_drops.extend(per_source_stage_drops(
-                v,
-                "clean",
-                "per_source_rejected",
-            ));
+            per_source_drops.extend(per_source_stage_drops(v, "clean", "per_source_rejected"));
         }
     }
     if let Some(v) = reports.get("lid") {

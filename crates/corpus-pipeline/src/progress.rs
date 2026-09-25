@@ -25,7 +25,10 @@ pub fn count_jsonl_lines(path: &Path) -> Option<u64> {
     if !path.exists() {
         return None;
     }
-    if let Ok(out) = Command::new("wc").args(["-l", &path.to_string_lossy()]).output() {
+    if let Ok(out) = Command::new("wc")
+        .args(["-l", &path.to_string_lossy()])
+        .output()
+    {
         if out.status.success() {
             let text = String::from_utf8_lossy(&out.stdout);
             if let Some(n) = text.split_whitespace().next() {
@@ -63,8 +66,10 @@ impl RecordProgress {
                 let bar = ProgressBar::new_spinner();
                 Self::configure_bar(&bar);
                 bar.set_style(
-                    ProgressStyle::with_template("{spinner:.green} {msg} {pos} records {elapsed_precise}")
-                        .expect("spinner template"),
+                    ProgressStyle::with_template(
+                        "{spinner:.green} {msg} {pos} records {elapsed_precise}",
+                    )
+                    .expect("spinner template"),
                 );
                 bar.enable_steady_tick(std::time::Duration::from_millis(100));
                 bar
@@ -165,7 +170,10 @@ pub fn print_stage_checklist(stages: &[String], completed: &[String], current: O
         } else {
             "pending"
         };
-        println!("  [{icon}] {n}/{total} {label:<28} {status}", total = stages.len());
+        println!(
+            "  [{icon}] {n}/{total} {label:<28} {status}",
+            total = stages.len()
+        );
     }
     println!("{}", "─".repeat(56));
 }
@@ -202,7 +210,9 @@ pub fn stage_summary_line(stage: &str) -> Option<String> {
         "merge" => {
             let input = v["total_input_docs"].as_u64()?;
             let kept = v["total_output_docs"].as_u64()?;
-            let dropped = v["total_dropped"].as_u64().unwrap_or(input.saturating_sub(kept));
+            let dropped = v["total_dropped"]
+                .as_u64()
+                .unwrap_or(input.saturating_sub(kept));
             Some(format!(
                 "{input_fmt} in → {kept_fmt} kept, {dropped_fmt} dropped ({pct})",
                 input_fmt = format_number(input),

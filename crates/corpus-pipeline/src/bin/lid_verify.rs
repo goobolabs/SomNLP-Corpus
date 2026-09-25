@@ -13,7 +13,7 @@ use corpus_pipeline::io::{par_map_jsonl, to_line, write_report, JsonlSink, Rejec
 use corpus_pipeline::lid::{self, stage};
 use corpus_pipeline::progress::{count_jsonl_lines, RecordProgress};
 use corpus_pipeline::report::{
-    print_banner, print_drops_by_reason, print_kv, print_paths, print_per_source_flow, pct,
+    pct, print_banner, print_drops_by_reason, print_kv, print_paths, print_per_source_flow,
     write_markdown_companion,
 };
 use serde::Serialize;
@@ -81,9 +81,7 @@ fn main() -> Result<()> {
         ..Default::default()
     };
 
-    let total = args
-        .limit
-        .or_else(|| count_jsonl_lines(&args.input));
+    let total = args.limit.or_else(|| count_jsonl_lines(&args.input));
     eprintln!();
     eprintln!("{}", "─".repeat(56));
     eprintln!("Stage: Language identification");
@@ -95,10 +93,7 @@ fn main() -> Result<()> {
     );
     eprintln!("{}", "─".repeat(56));
 
-    let progress = RecordProgress::start(
-        &format!("LID ({})", detector.name()),
-        total,
-    );
+    let progress = RecordProgress::start(&format!("LID ({})", detector.name()), total);
 
     // Detection and serialization run on the rayon pool; stats and writes stay
     // sequential, in input order.
@@ -166,7 +161,11 @@ fn main() -> Result<()> {
     print_kv("kept", report.output_docs);
     print_kv(
         "rejected",
-        format!("{} ({})", report.rejected_docs, pct(report.rejected_docs, report.input_docs)),
+        format!(
+            "{} ({})",
+            report.rejected_docs,
+            pct(report.rejected_docs, report.input_docs)
+        ),
     );
     print_kv("min confidence", report.min_confidence);
     print_drops_by_reason(&report.drops_by_reason, report.rejected_docs);

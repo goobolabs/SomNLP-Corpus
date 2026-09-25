@@ -30,11 +30,17 @@ impl DedupCounters {
     }
 
     pub fn record_within_dup(&mut self, source: &str) {
-        *self.within_source_dups.entry(source.to_string()).or_insert(0) += 1;
+        *self
+            .within_source_dups
+            .entry(source.to_string())
+            .or_insert(0) += 1;
     }
 
     pub fn record_cross_dup(&mut self, source: &str) {
-        *self.cross_source_dups.entry(source.to_string()).or_insert(0) += 1;
+        *self
+            .cross_source_dups
+            .entry(source.to_string())
+            .or_insert(0) += 1;
     }
 
     pub fn total_dropped(&self) -> u64 {

@@ -754,8 +754,10 @@ mod tests {
     #[test]
     fn thresholds_filter_low_scores() {
         let row = Row::parse(ROW).unwrap();
-        let mut filters = Filters::default();
-        filters.min_laser = Some(1.5);
+        let mut filters = Filters {
+            min_laser: Some(1.5),
+            ..Default::default()
+        };
         assert!(!filters.keep(&row));
         filters.min_laser = Some(1.0);
         assert!(filters.keep(&row));

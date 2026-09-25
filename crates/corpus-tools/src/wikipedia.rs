@@ -2,9 +2,9 @@
 
 use std::path::Path;
 
-use anyhow::Result;
 use crate::export::export_parquet_shards;
 use crate::hf::{filter_paths, HfClient};
+use anyhow::Result;
 
 pub const DATASET_NAME: &str = "wikimedia/wikipedia";
 pub const DATASET_CONFIG: &str = "20231101.so";
