@@ -52,15 +52,15 @@ mod tests {
 
     #[test]
     fn preserves_single_paragraph_break() {
-        assert_eq!(normalize_whitespace("para one\n\npara two"), "para one\n\npara two");
+        assert_eq!(
+            normalize_whitespace("para one\n\npara two"),
+            "para one\n\npara two"
+        );
     }
 
     #[test]
     fn collapses_multiple_blank_lines() {
-        assert_eq!(
-            normalize_whitespace("a\n\n\n\nb"),
-            "a\n\nb"
-        );
+        assert_eq!(normalize_whitespace("a\n\n\n\nb"), "a\n\nb");
     }
 
     #[test]

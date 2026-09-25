@@ -15,10 +15,14 @@ Requires Rust 1.75+.
 
 ```bash
 cargo build
-cargo test
-cargo clippy -- -D warnings
-cargo fmt --check
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
 ```
+
+CI runs the last three commands on every pull request and push to `main`
+(see [.github/workflows/ci.yml](.github/workflows/ci.yml)); a PR should only
+be merged once all three pass.
 
 Release binaries:
 
@@ -39,7 +43,8 @@ cargo build --release
 ## Rust code standards
 
 - No `unwrap()` on fallible paths in library code; use `anyhow::Result` or typed errors.
-- Run `cargo fmt` and `cargo clippy` before submitting.
+- Run `cargo fmt --all` and the clippy command above before submitting; CI rejects
+  unformatted code and any clippy warning, including in tests.
 - Keep binaries thin; put logic in `corpus-tools` library modules.
 - Add tests when changing parsing, JSONL handling, or export logic.
 

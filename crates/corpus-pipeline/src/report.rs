@@ -89,10 +89,7 @@ pub fn quality_flag_name(flag: &QualityFlag) -> String {
 pub fn print_inspect_hint(sidecar: &Path, fields: &str) {
     if sidecar.exists() {
         println!("  inspect rejects:");
-        println!(
-            "    jq -r '{fields}' {} | head -40",
-            sidecar.display()
-        );
+        println!("    jq -r '{fields}' {} | head -40", sidecar.display());
     }
 }
 

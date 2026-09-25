@@ -14,7 +14,7 @@ use corpus_pipeline::config::PipelineConfig;
 use corpus_pipeline::io::{par_map_jsonl, to_line, write_report, JsonlSink, RejectWriter};
 use corpus_pipeline::progress::{count_jsonl_lines, RecordProgress};
 use corpus_pipeline::report::{
-    print_banner, print_drops_by_reason, print_kv, print_paths, print_per_source_flow, pct,
+    pct, print_banner, print_drops_by_reason, print_kv, print_paths, print_per_source_flow,
     quality_flag_name, write_markdown_companion,
 };
 use serde::Serialize;
@@ -96,9 +96,7 @@ fn main() -> Result<()> {
 
     let mut seen: HashMap<ContentHash, DocId> = HashMap::new();
 
-    let total = args
-        .limit
-        .or_else(|| count_jsonl_lines(&args.input));
+    let total = args.limit.or_else(|| count_jsonl_lines(&args.input));
     eprintln!();
     eprintln!("{}", "─".repeat(56));
     eprintln!("Stage: Clean");
@@ -149,7 +147,11 @@ fn main() -> Result<()> {
 
         if record.quality.disposition == RecordDisposition::Rejected {
             let reason = quality_flag_name(
-                record.quality.flags.first().unwrap_or(&QualityFlag::TooShort),
+                record
+                    .quality
+                    .flags
+                    .first()
+                    .unwrap_or(&QualityFlag::TooShort),
             );
             *report.drops_by_reason.entry(reason.clone()).or_insert(0) += 1;
             *report
@@ -191,7 +193,10 @@ fn main() -> Result<()> {
             }
         }
 
-        *report.per_source_kept.entry(record.provenance.source.0.clone()).or_insert(0) += 1;
+        *report
+            .per_source_kept
+            .entry(record.provenance.source.0.clone())
+            .or_insert(0) += 1;
         report.output_docs += 1;
         output.write_line(&line)?;
         Ok(())
@@ -215,10 +220,17 @@ fn main() -> Result<()> {
 
     print_banner("Clean stage complete");
     print_kv("input", report.input_docs);
-    print_kv("kept", format!("{} (review: {})", report.output_docs, report.review_docs));
+    print_kv(
+        "kept",
+        format!("{} (review: {})", report.output_docs, report.review_docs),
+    );
     print_kv(
         "rejected",
-        format!("{} ({})", report.rejected_docs, pct(report.rejected_docs, report.input_docs)),
+        format!(
+            "{} ({})",
+            report.rejected_docs,
+            pct(report.rejected_docs, report.input_docs)
+        ),
     );
     print_kv("skipped (no source)", report.skipped_unknown_source);
     print_kv(

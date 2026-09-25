@@ -74,11 +74,9 @@ fn clip(text: &str, max_bytes: usize) -> &str {
 mod tests {
     use super::*;
     use crate::lid::LinguaDetector;
-    use common::hash::content_hash;
-    use common::types::{
-        ContentHash, DocId, License, Provenance, QualityInfo, SourceKey, SCHEMA_VERSION,
-    };
     use chrono::Utc;
+    use common::hash::content_hash;
+    use common::types::{DocId, License, Provenance, QualityInfo, SourceKey, SCHEMA_VERSION};
     use std::collections::BTreeMap;
 
     fn record(source: &str, text: &str) -> CorpusRecord {
@@ -134,7 +132,10 @@ mod tests {
     #[test]
     fn tag_only_never_rejects_sentence_source() {
         let d = LinguaDetector::new();
-        let mut r = record("opus", "This is English text in a parallel sentence corpus.");
+        let mut r = record(
+            "opus",
+            "This is English text in a parallel sentence corpus.",
+        );
         apply_lid(&mut r, &d, 0.5, 2000);
         assert!(is_kept(&r), "sentence source must not be rejected");
         assert!(r.quality.lang_score.is_some());

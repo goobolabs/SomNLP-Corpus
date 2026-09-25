@@ -118,7 +118,8 @@ mod tests {
     fn removes_near_duplicate_keeps_longest() {
         let base = "the quick brown fox jumps over the lazy dog in the green field every";
         let near = format!("{base} morning");
-        let other = "completely different sentence about something unrelated entirely here now today";
+        let other =
+            "completely different sentence about something unrelated entirely here now today";
 
         let sets = vec![
             shingle::shingle_ints(base, 3),
@@ -128,7 +129,10 @@ mod tests {
         let lengths = vec![base.len(), near.len(), other.len()];
 
         let outcome = near_dedup(&sets, &lengths, &cfg());
-        assert_eq!(outcome.stats.removed, 1, "expected one near-duplicate removed");
+        assert_eq!(
+            outcome.stats.removed, 1,
+            "expected one near-duplicate removed"
+        );
         // The longer of the two near-duplicates (near) is canonical; base removed.
         assert!(outcome.removed_to_canonical.contains_key(&0));
         assert_eq!(outcome.removed_to_canonical[&0], 1);

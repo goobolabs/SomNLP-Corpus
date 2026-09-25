@@ -15,7 +15,7 @@ use corpus_pipeline::io::{par_map_jsonl, to_line, write_report, JsonlSink, Rejec
 use corpus_pipeline::lid::build;
 use corpus_pipeline::progress::{count_jsonl_lines, RecordProgress};
 use corpus_pipeline::report::{
-    print_banner, print_drops_by_reason, print_kv, print_paths, print_per_source_flow, pct,
+    pct, print_banner, print_drops_by_reason, print_kv, print_paths, print_per_source_flow,
     quality_flag_name, write_markdown_companion,
 };
 use serde::Serialize;
@@ -65,9 +65,19 @@ struct DeepCleanReport {
 /// One deep-cleaned record, already serialized for its destination file.
 enum Processed {
     /// Rejected by an earlier stage; copied to the reject sidecar unchanged.
-    Passthrough { source: String, line: String },
-    Rejected { source: String, reason: String, line: String },
-    Kept { source: String, line: String },
+    Passthrough {
+        source: String,
+        line: String,
+    },
+    Rejected {
+        source: String,
+        reason: String,
+        line: String,
+    },
+    Kept {
+        source: String,
+        line: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -140,7 +150,11 @@ fn main() -> Result<()> {
                 report.rejected_docs += 1;
                 rejects.write_line(&line)?;
             }
-            Processed::Rejected { source, reason, line } => {
+            Processed::Rejected {
+                source,
+                reason,
+                line,
+            } => {
                 *report.per_source_input.entry(source.clone()).or_insert(0) += 1;
                 *report.drops_by_reason.entry(reason.clone()).or_insert(0) += 1;
                 *report
@@ -184,7 +198,11 @@ fn main() -> Result<()> {
     print_kv("kept", report.output_docs);
     print_kv(
         "rejected",
-        format!("{} ({})", report.rejected_docs, pct(report.rejected_docs, report.input_docs)),
+        format!(
+            "{} ({})",
+            report.rejected_docs,
+            pct(report.rejected_docs, report.input_docs)
+        ),
     );
     print_drops_by_reason(&report.drops_by_reason, report.rejected_docs);
     print_per_source_flow(

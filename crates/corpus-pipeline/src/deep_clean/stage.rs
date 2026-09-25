@@ -52,10 +52,8 @@ fn apply_heuristics_v2(
         }
     }
 
-    if heuristics::mostly_numbers(text) {
-        if class == SourceClass::Document {
-            return Some(QualityFlag::MostlyNumbers);
-        }
+    if heuristics::mostly_numbers(text) && class == SourceClass::Document {
+        return Some(QualityFlag::MostlyNumbers);
     }
 
     if heuristics::has_html_remnant(text) {
@@ -90,12 +88,8 @@ pub fn deep_clean_record(
     let source = record.provenance.source.0.clone();
     let mut text = record.text.clone();
 
-    text = normalize::normalize_source_text(
-        &source,
-        &text,
-        cfg.unescape_madlad,
-        cfg.strip_opus_html,
-    );
+    text =
+        normalize::normalize_source_text(&source, &text, cfg.unescape_madlad, cfg.strip_opus_html);
     text = entities::decode_entities(&text);
     text = mojibake::fix_mojibake_with_passes(&text, cfg.mojibake_max_passes);
     let nfc: String = text.nfc().collect();
@@ -170,8 +164,7 @@ mod tests {
     use chrono::Utc;
     use common::hash::content_hash;
     use common::types::{
-        DedupInfo, DocId, Lang, License, Provenance, QualityInfo, SourceKey,
-        SCHEMA_VERSION,
+        DedupInfo, DocId, Lang, License, Provenance, QualityInfo, SourceKey, SCHEMA_VERSION,
     };
     use std::collections::BTreeMap;
 
@@ -224,12 +217,7 @@ mod tests {
         dc.lid.segment_level = false;
         let detector = LinguaDetector::new();
         let text = "Soomaaliya waa dal wanaagsan oo leh taariikh dheer.\nline1\\nline2";
-        let result = deep_clean_record(
-            sample_record("madlad", text),
-            &dc,
-            &clean,
-            &detector,
-        );
+        let result = deep_clean_record(sample_record("madlad", text), &dc, &clean, &detector);
         assert!(result.reject.is_none(), "{:?}", result.record.quality.flags);
         assert!(result.record.text.contains('\n'));
     }

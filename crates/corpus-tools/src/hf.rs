@@ -199,6 +199,22 @@ impl HfClient {
     }
 }
 
+pub fn resolve_token() -> Option<String> {
+    std::env::var("HF_TOKEN")
+        .ok()
+        .or_else(|| std::env::var("HUGGING_FACE_HUB_TOKEN").ok())
+        .filter(|token| !token.trim().is_empty())
+}
+
+pub fn filter_paths(paths: Vec<String>, suffix: &str) -> Vec<String> {
+    let mut filtered: Vec<String> = paths
+        .into_iter()
+        .filter(|path| path.ends_with(suffix))
+        .collect();
+    filtered.sort();
+    filtered
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -215,20 +231,4 @@ mod tests {
     fn leaves_plain_branch_untouched() {
         assert_eq!(encode_revision("main"), "main");
     }
-}
-
-pub fn resolve_token() -> Option<String> {
-    std::env::var("HF_TOKEN")
-        .ok()
-        .or_else(|| std::env::var("HUGGING_FACE_HUB_TOKEN").ok())
-        .filter(|token| !token.trim().is_empty())
-}
-
-pub fn filter_paths(paths: Vec<String>, suffix: &str) -> Vec<String> {
-    let mut filtered: Vec<String> = paths
-        .into_iter()
-        .filter(|path| path.ends_with(suffix))
-        .collect();
-    filtered.sort();
-    filtered
 }

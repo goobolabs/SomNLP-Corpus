@@ -11,15 +11,14 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 /// Stream JSON records of type `T` from a JSONL file, skipping blank lines.
-pub fn read_jsonl<T: DeserializeOwned>(
-    path: &Path,
-) -> Result<impl Iterator<Item = Result<T>>> {
-    let file =
-        File::open(path).with_context(|| format!("opening {}", path.display()))?;
+pub fn read_jsonl<T: DeserializeOwned>(path: &Path) -> Result<impl Iterator<Item = Result<T>>> {
+    let file = File::open(path).with_context(|| format!("opening {}", path.display()))?;
     let reader = BufReader::new(file);
     let path = path.to_path_buf();
-    Ok(reader.lines().enumerate().filter_map(move |(index, line)| {
-        match line {
+    Ok(reader
+        .lines()
+        .enumerate()
+        .filter_map(move |(index, line)| match line {
             Ok(raw) => {
                 if raw.trim().is_empty() {
                     return None;
@@ -30,8 +29,7 @@ pub fn read_jsonl<T: DeserializeOwned>(
                 Some(parsed)
             }
             Err(error) => Some(Err(error.into())),
-        }
-    }))
+        }))
 }
 
 /// Records per batch handed to the rayon pool by [`par_map_jsonl`].
@@ -136,8 +134,7 @@ impl JsonlSink {
             fs::create_dir_all(parent)
                 .with_context(|| format!("creating directory {}", parent.display()))?;
         }
-        let file = File::create(path)
-            .with_context(|| format!("creating {}", path.display()))?;
+        let file = File::create(path).with_context(|| format!("creating {}", path.display()))?;
         Ok(Self {
             writer: BufWriter::new(file),
             count: 0,

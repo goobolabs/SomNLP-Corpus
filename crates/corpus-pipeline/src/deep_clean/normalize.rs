@@ -1,6 +1,11 @@
 //! Source-aware P0 normalization for the deep-clean stage.
 
-pub fn normalize_source_text(source: &str, text: &str, unescape_madlad: bool, strip_opus_html: bool) -> String {
+pub fn normalize_source_text(
+    source: &str,
+    text: &str,
+    unescape_madlad: bool,
+    strip_opus_html: bool,
+) -> String {
     let mut out = text.to_string();
     if unescape_madlad && source == "madlad" {
         out = unescape_literal_escapes(&out);

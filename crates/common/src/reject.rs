@@ -87,6 +87,9 @@ mod tests {
         let mut record = sample();
         reject_near_duplicate(&mut record, DocId("hplt:ffff".into()));
         assert!(record.dedup.is_duplicate);
-        assert_eq!(record.dedup.near_duplicate_of, Some(DocId("hplt:ffff".into())));
+        assert_eq!(
+            record.dedup.near_duplicate_of,
+            Some(DocId("hplt:ffff".into()))
+        );
     }
 }

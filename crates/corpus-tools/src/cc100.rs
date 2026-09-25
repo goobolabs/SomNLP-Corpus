@@ -60,7 +60,10 @@ pub fn iter_documents_from_url(
 fn parse_documents(bytes: Vec<u8>) -> Vec<String> {
     let mut documents = Vec::new();
     let mut start = 0usize;
-    while let Some(rel) = bytes[start..].windows(2).position(|window| window == b"\n\n") {
+    while let Some(rel) = bytes[start..]
+        .windows(2)
+        .position(|window| window == b"\n\n")
+    {
         let end = start + rel;
         if let Some(text) = normalize_document(&bytes[start..end]) {
             documents.push(text);

@@ -22,7 +22,7 @@ struct Args {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    
+
     download_wikipedia(&args.output, args.limit.limit, args.stream.streaming())?;
 
     Ok(())

@@ -20,7 +20,5 @@ pub fn text_column() -> &'static str {
 }
 
 pub fn source_url() -> String {
-    format!(
-        "https://huggingface.co/datasets/{DATASET_REPO} (Somali column: {TEXT_COLUMN})"
-    )
+    format!("https://huggingface.co/datasets/{DATASET_REPO} (Somali column: {TEXT_COLUMN})")
 }

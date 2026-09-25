@@ -42,13 +42,19 @@ mod tests {
 
     #[test]
     fn rejects_empty() {
-        assert_eq!(rejection_reason("   ", 5, 0.005), Some(QualityFlag::TooShort));
+        assert_eq!(
+            rejection_reason("   ", 5, 0.005),
+            Some(QualityFlag::TooShort)
+        );
     }
 
     #[test]
     fn rejects_corrupted() {
         let text = "a\u{FFFD}\u{FFFD}\u{FFFD}b";
-        assert_eq!(rejection_reason(text, 1, 0.005), Some(QualityFlag::Corrupted));
+        assert_eq!(
+            rejection_reason(text, 1, 0.005),
+            Some(QualityFlag::Corrupted)
+        );
     }
 
     #[test]
